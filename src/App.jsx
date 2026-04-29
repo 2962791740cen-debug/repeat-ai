@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   ChevronDown, ChevronUp, RotateCcw, Layers,
   Target, Search, CheckCircle, Circle, ArrowUpRight, Star,
-  BookMarked, GitBranch, Brain, Cpu, Repeat
+  BookMarked, GitBranch, Brain, Cpu, Repeat,
+  ArrowLeft, ArrowRight, Quote, Feather
 } from 'lucide-react';
 
 // ── Global styles (always mounted) ───────────────────────────────────────────
@@ -16,14 +17,63 @@ const GlobalStyles = () => (
     html, body, #root { height: 100%; overflow: hidden; }
     body { font-family: 'Noto Serif SC', serif; }
 
+    /* ══ READING PROGRESS BAR ════════════════════════════════════════════════ */
+    .ra-progress {
+      position: fixed; top: 0; left: 220px; right: 0; height: 2px;
+      background: rgba(201,162,39,0.08); z-index: 200;
+    }
+    .ra-progress-fill {
+      height: 100%; background: linear-gradient(90deg,#C9A227,#e8c84a);
+      transition: width 0.15s linear; box-shadow: 0 0 8px rgba(201,162,39,0.5);
+    }
+
+    /* ══ PAPER TEXTURE (subtle grain) ════════════════════════════════════════ */
+    .ra-grain::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+      opacity: 0.04; mix-blend-mode: multiply; z-index: 0;
+    }
+
     /* ══ LANDING ═══════════════════════════════════════════════════════════ */
     .ra-landing {
       position: fixed; inset: 0; background: #0D0A05;
       display: flex; align-items: center; justify-content: center;
       overflow: hidden;
     }
-    .ra-out { transform: scale(2.5); opacity: 0; filter: blur(15px);
-               transition: all 1.2s ease-in; }
+    .ra-landing::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse at 20% 30%, rgba(201,162,39,0.05) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 70%, rgba(201,162,39,0.04) 0%, transparent 50%);
+    }
+    .ra-landing-corner {
+      position: absolute; color: rgba(201,162,39,0.4);
+      font-size: 0.65rem; letter-spacing: 0.3em; z-index: 5;
+    }
+    .ra-landing-corner.tl { top: 2rem; left: 2rem; }
+    .ra-landing-corner.tr { top: 2rem; right: 2rem; }
+    .ra-landing-corner.bl { bottom: 2rem; left: 2rem; }
+    .ra-landing-corner.br { bottom: 2rem; right: 2rem; text-align: right; }
+
+    /* Floating gold dust particles */
+    .ra-dust {
+      position: absolute; width: 2px; height: 2px; border-radius: 50%;
+      background: #C9A227; box-shadow: 0 0 6px #C9A227;
+      animation: ra-float 12s linear infinite; opacity: 0;
+    }
+    @keyframes ra-float {
+      0%   { transform: translateY(100vh) translateX(0); opacity: 0; }
+      10%  { opacity: 0.5; }
+      90%  { opacity: 0.3; }
+      100% { transform: translateY(-10vh) translateX(50px); opacity: 0; }
+    }
+    /* Landing exit — let doors keep opening AND landing fades out.
+       Both stay dark, continuous with the chapter-entrance curtains that come next. */
+    .ra-out { opacity: 0; transition: opacity 1.1s cubic-bezier(0.4, 0, 0.2, 1); }
+    .ra-out .ra-door.left  { transform: rotateY(-150deg); transition: transform 1.3s cubic-bezier(0.5, 0, 0.2, 1); }
+    .ra-out .ra-door.right { transform: rotateY( 150deg); transition: transform 1.3s cubic-bezier(0.5, 0, 0.2, 1); }
+    .ra-out .ra-crack      { width: 10px; filter: blur(6px); box-shadow: 0 0 80px rgba(201,162,39,0.8); transition: all 1.0s ease-out; }
+    .ra-out .ra-hero, .ra-out .ra-entry { opacity: 0; transition: opacity 0.5s ease-out; }
 
     .ra-phrase {
       position: absolute; left: 50%; top: 50%;
@@ -36,49 +86,68 @@ const GlobalStyles = () => (
     .ra-phrase.show { opacity: 1; transform: translate(-50%, -50%); }
     .ra-phrase.hide { opacity: 0; transform: translate(-50%, -60%); }
 
+    /* ── Two-door split (cinematic) ── */
     .ra-door-wrap {
-      position: absolute; inset: 0;
-      display: flex; align-items: center; justify-content: center;
-      perspective: 1200px;
+      position: absolute; inset: 0; perspective: 1800px;
+      display: flex; align-items: stretch; justify-content: center;
+      pointer-events: none;
     }
     .ra-door {
-      width: clamp(200px, 28vw, 320px); height: clamp(280px, 48vh, 460px);
-      position: relative; transform-style: preserve-3d;
-      transition: transform 2s cubic-bezier(0.4, 0, 0.2, 1);
+      position: absolute; top: 0; height: 100%; width: 50%;
+      background: linear-gradient(180deg, #14100a 0%, #1a1208 40%, #2D2416 70%, #1a1208 100%);
+      transition: transform 2.4s cubic-bezier(0.6, 0, 0.2, 1);
+      box-shadow: inset 0 0 60px rgba(0,0,0,0.6);
     }
-    .ra-door.open { transform: rotateY(-110deg); }
-    .ra-door-face {
-      position: absolute; inset: 0;
-      background: linear-gradient(135deg, #1a1208 0%, #2D2416 40%, #1a1208 100%);
-      border: 1px solid #4a3a1a;
-      display: flex; align-items: center; justify-content: center;
-      backface-visibility: hidden;
+    .ra-door::after {
+      content: ''; position: absolute; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+      opacity: 0.06; pointer-events: none;
     }
-    .ra-door-face::before {
-      content: ''; position: absolute; inset: 12px;
-      border: 1px solid rgba(201,162,39,0.3);
+    .ra-door.left {
+      left: 0; transform-origin: left center;
+      border-right: 1px solid #C9A22744;
+      box-shadow: inset -2px 0 4px rgba(201,162,39,0.15), inset 0 0 60px rgba(0,0,0,0.6);
     }
-    .ra-door-glyph { font-size: 4rem; color: #C9A227; opacity: 0.7; }
+    .ra-door.right {
+      right: 0; transform-origin: right center;
+      border-left: 1px solid #C9A22744;
+      box-shadow: inset 2px 0 4px rgba(201,162,39,0.15), inset 0 0 60px rgba(0,0,0,0.6);
+    }
+    .ra-door.open.left  { transform: rotateY(-105deg); }
+    .ra-door.open.right { transform: rotateY( 105deg); }
 
+    /* Glyph 重 painted on the doors (split between halves) */
+    .ra-door-glyph-half {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      font-family: 'Playfair Display', 'Noto Serif SC', serif;
+      font-size: clamp(8rem, 22vw, 22rem); font-weight: 700;
+      color: rgba(201,162,39,0.18); line-height: 1;
+      pointer-events: none; user-select: none;
+      transition: opacity 1.5s ease;
+    }
+    .ra-door.open .ra-door-glyph-half { opacity: 0; }
+    .ra-door.left  .ra-door-glyph-half { right: -0.5em; overflow: hidden; }
+    .ra-door.right .ra-door-glyph-half { left:  -0.5em; overflow: hidden; }
+
+    /* Gold crack of light revealed when doors open */
     .ra-crack {
-      position: absolute; left: 50%; top: 50%;
-      transform: translate(-50%, -50%);
-      width: 2px; height: 0;
-      background: linear-gradient(to bottom, transparent, #C9A227, #e8c84a, #C9A227, transparent);
-      opacity: 0; transition: height 1.5s ease, opacity 0.5s ease;
+      position: absolute; left: 50%; top: 0; transform: translateX(-50%);
+      width: 0; height: 100%; opacity: 0;
+      background: linear-gradient(180deg,
+        transparent 0%,
+        rgba(201,162,39,0.4) 15%,
+        rgba(232,200,74,0.9) 50%,
+        rgba(201,162,39,0.4) 85%,
+        transparent 100%);
+      box-shadow:
+        0 0 60px rgba(201,162,39,0.6),
+        0 0 120px rgba(201,162,39,0.3),
+        0 0 200px rgba(201,162,39,0.15);
+      transition: width 1.8s cubic-bezier(0.5,0,0.2,1), opacity 0.6s ease;
       filter: blur(0.5px);
-      box-shadow: 0 0 8px #C9A227, 0 0 20px rgba(201,162,39,0.4);
     }
-    .ra-crack.show { height: clamp(280px, 48vh, 460px); opacity: 1; }
-    .ra-crack::before {
-      content: ''; position: absolute; left: -20px; top: 30%;
-      width: 40px; height: 1px; background: rgba(201,162,39,0.5);
-      transform: rotate(-20deg);
-    }
-    .ra-crack::after {
-      content: ''; position: absolute; left: -15px; top: 60%;
-      width: 30px; height: 1px; background: rgba(201,162,39,0.4);
-      transform: rotate(15deg);
+    .ra-crack.show {
+      width: 3px; opacity: 1;
     }
 
     .ra-hero { opacity: 0; transition: opacity 2.5s ease; pointer-events: none; }
@@ -218,9 +287,526 @@ const GlobalStyles = () => (
       pointer-events: none;
     }
 
+    /* ══ CHAPTER FOOTER NAV ══════════════════════════════════════════════════ */
+    .ra-chap-nav {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+      background: rgba(201,162,39,0.15); margin-top: 4rem;
+      border-top: 1px solid rgba(201,162,39,0.2);
+    }
+    .ra-chap-nav-item {
+      background: #FAF8F3; padding: 2rem 2.5rem; cursor: pointer;
+      transition: background 0.3s ease; display: flex; flex-direction: column;
+      gap: 0.4rem; min-height: 110px; justify-content: center;
+    }
+    .ra-chap-nav-item:hover { background: #fff; }
+    .ra-chap-nav-item.disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+    .ra-chap-nav-label {
+      font-size: 0.7rem; color: #C9A227; letter-spacing: 0.2em;
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .ra-chap-nav-title { font-size: 1rem; color: #2D2416; font-weight: 500; }
+
+    /* ══ STAGE INTENSITY BARS (Ch01) ═════════════════════════════════════════ */
+    .ra-stage-bar {
+      display: flex; gap: 3px; height: 6px; margin-top: 0.6rem;
+    }
+    .ra-stage-bar-cell {
+      flex: 1; background: rgba(201,162,39,0.12);
+      transition: background 0.4s ease;
+    }
+    .ra-stage-bar-cell.fill { background: #C9A227; box-shadow: 0 0 6px rgba(201,162,39,0.5); }
+
+    /* ══ WORKFLOW CONNECTOR (Ch04) ═══════════════════════════════════════════ */
+    .ra-workflow {
+      position: relative;
+    }
+    .ra-workflow::before {
+      content: ''; position: absolute; left: 24px; top: 30px; bottom: 30px;
+      width: 1px; background: linear-gradient(to bottom,
+        rgba(201,162,39,0.5) 0%,
+        rgba(201,162,39,0.2) 50%,
+        rgba(201,162,39,0.5) 100%);
+    }
+    .ra-workflow-row {
+      position: relative; display: flex; gap: 1.5rem;
+      padding: 1rem 0; align-items: flex-start;
+    }
+    .ra-workflow-dot {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: #FAF8F3; border: 2px solid #C9A227;
+      display: flex; align-items: center; justify-content: center;
+      color: #C9A227; font-weight: 700; font-size: 0.9rem; flex-shrink: 0;
+      position: relative; z-index: 1; transition: all 0.3s ease;
+      font-family: 'Playfair Display', serif;
+    }
+    .ra-workflow-row.active .ra-workflow-dot {
+      background: #C9A227; color: #FAF8F3; transform: scale(1.1);
+      box-shadow: 0 0 0 6px rgba(201,162,39,0.15);
+    }
+
+    /* ══ PULSING DOT (sidebar active) ════════════════════════════════════════ */
+    .ra-pulse {
+      width: 6px; height: 6px; border-radius: 50%; background: #C9A227;
+      box-shadow: 0 0 8px #C9A227;
+      animation: ra-pulse 2s ease-in-out infinite;
+    }
+    @keyframes ra-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+    }
+
+    /* ══ PULL QUOTE (oversized) ══════════════════════════════════════════════ */
+    .ra-pullquote {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.4rem, 3vw, 2.2rem);
+      line-height: 1.6; color: #2D2416; font-style: italic;
+      padding: 2.5rem 0 2.5rem 3rem; position: relative;
+      max-width: 720px;
+    }
+    .ra-pullquote::before {
+      content: '"'; position: absolute; left: 0; top: 0;
+      font-size: 6rem; color: #C9A227; opacity: 0.3;
+      font-family: 'Playfair Display', serif; line-height: 1;
+    }
+
+    /* ══ FADE-IN ON SCROLL ═══════════════════════════════════════════════════ */
+    .ra-fade { opacity: 0; transform: translateY(20px);
+                transition: opacity 0.8s ease, transform 0.8s ease; }
+    .ra-fade.visible { opacity: 1; transform: translateY(0); }
+
+    /* ══ PAGE TRANSITION (chapter switch) ════════════════════════════════════
+       Page is rendered immediately but stays subtly low until the curtains
+       split open at ~1700ms. Just a gentle fade — the *real* reveal is the
+       curtains parting and uncovering it. */
+    .ra-page {
+      animation: ra-page-in 900ms cubic-bezier(0.25, 0.1, 0.25, 1) both;
+      animation-delay: 1700ms;
+    }
+    @keyframes ra-page-in {
+      0%   { opacity: 0.3; transform: translateY(8px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ══ CHAPTER ENTRANCE: TWIN-CURTAIN SPLIT ════════════════════════════════
+       Total 2.8s. Two dark panels slide in to cover, hold to display info,
+       then slide apart to REVEAL the next page (not fade — slide).
+       This solves the black→white flash because the new page is uncovered
+       spatially, not by color transition. */
+    .ra-entrance {
+      position: fixed; inset: 0; z-index: 500; pointer-events: none;
+    }
+
+    /* Two curtain panels */
+    .ra-entrance-curtain {
+      position: absolute; top: 0; height: 100%; width: 50%;
+      background: linear-gradient(180deg, #14100a 0%, #1a1208 35%, #0B0805 70%, #050302 100%);
+    }
+    .ra-entrance-curtain::after {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+      opacity: 0.06;
+    }
+    .ra-entrance-curtain.left {
+      left: 0;
+      box-shadow: inset -2px 0 4px rgba(201,162,39,0.12), inset 0 0 80px rgba(0,0,0,0.55);
+      animation: ra-curtain-left 2800ms cubic-bezier(0.55, 0, 0.2, 1) forwards;
+    }
+    .ra-entrance-curtain.right {
+      right: 0;
+      box-shadow: inset 2px 0 4px rgba(201,162,39,0.12), inset 0 0 80px rgba(0,0,0,0.55);
+      animation: ra-curtain-right 2800ms cubic-bezier(0.55, 0, 0.2, 1) forwards;
+    }
+    @keyframes ra-curtain-left {
+      0%   { transform: translateX(-100%); }
+      9%   { transform: translateX(0); }
+      62%  { transform: translateX(0); }
+      100% { transform: translateX(-100%); }
+    }
+    @keyframes ra-curtain-right {
+      0%   { transform: translateX(100%); }
+      9%   { transform: translateX(0); }
+      62%  { transform: translateX(0); }
+      100% { transform: translateX(100%); }
+    }
+
+    /* Central golden seam — appears when curtains meet, fades as they part */
+    .ra-entrance-seam {
+      position: absolute; left: 50%; top: 0; bottom: 0; width: 2px;
+      transform: translateX(-50%);
+      background: linear-gradient(180deg,
+        transparent 0%, rgba(201,162,39,0.7) 30%, rgba(232,200,74,0.9) 50%,
+        rgba(201,162,39,0.7) 70%, transparent 100%);
+      box-shadow: 0 0 16px rgba(201,162,39,0.55), 0 0 40px rgba(201,162,39,0.3);
+      filter: blur(0.5px);
+      animation: ra-seam 2800ms ease forwards;
+    }
+    @keyframes ra-seam {
+      0%   { opacity: 0; }
+      14%  { opacity: 1; }
+      58%  { opacity: 1; }
+      66%  { opacity: 0; }
+      100% { opacity: 0; }
+    }
+
+    /* Content layer (number, label, title, bar) */
+    .ra-entrance-content {
+      position: absolute; inset: 0; z-index: 2;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+    .ra-entrance-content > * {
+      opacity: 0; transform: translateY(12px); filter: blur(6px);
+      animation: ra-entrance-child 2800ms cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+    }
+    @keyframes ra-entrance-child {
+      0%   { opacity: 0; transform: translateY(12px); filter: blur(6px); }
+      18%  { opacity: 1; transform: translateY(0); filter: blur(0); }
+      55%  { opacity: 1; transform: translateY(0); filter: blur(0); }
+      66%  { opacity: 0; transform: translateY(-8px); filter: blur(4px); }
+      100% { opacity: 0; }
+    }
+    .ra-entrance-num   { animation-delay: 120ms; }
+    .ra-entrance-label { animation-delay: 280ms; }
+    .ra-entrance-title { animation-delay: 440ms; }
+    .ra-entrance-bar   { animation-delay: 600ms; }
+
+    .ra-entrance-num {
+      font-family: 'Playfair Display', 'Noto Serif SC', serif;
+      font-size: clamp(7rem, 20vw, 16rem); font-weight: 700; line-height: 1;
+      color: rgba(201,162,39,0.16); letter-spacing: -0.05em;
+      text-shadow: 0 0 80px rgba(201,162,39,0.15);
+    }
+    .ra-entrance-label {
+      color: rgba(201,162,39,0.55); font-size: 0.75rem;
+      letter-spacing: 0.55em; margin: 1.8rem 0 1.2rem;
+    }
+    .ra-entrance-title {
+      color: #FAF8F3; font-family: 'Noto Serif SC', serif;
+      font-size: clamp(1.6rem, 3.6vw, 2.6rem); font-weight: 400;
+      letter-spacing: 0.18em;
+    }
+    .ra-entrance-bar {
+      width: 80px; height: 1px;
+      background: linear-gradient(90deg, transparent, #C9A227, transparent);
+      margin-top: 2.2rem; box-shadow: 0 0 8px rgba(201,162,39,0.5);
+    }
+
+    /* ══ MOUSE GLOW (subtle follower) ════════════════════════════════════════ */
+    .ra-glow {
+      position: fixed; pointer-events: none; z-index: 1;
+      width: 500px; height: 500px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(201,162,39,0.07) 0%, transparent 60%);
+      transform: translate(-50%, -50%); transition: opacity 0.3s ease;
+      mix-blend-mode: screen;
+    }
+
+    /* ══ INK REVEAL (line-by-line on scroll) ═════════════════════════════════ */
+    .ra-ink-line {
+      display: block; opacity: 0; transform: translateY(15px);
+      filter: blur(6px);
+      transition: opacity 1s ease, transform 1s ease, filter 1s ease;
+    }
+    .ra-ink-line.shown {
+      opacity: 1; transform: translateY(0); filter: blur(0);
+    }
+
+    /* ══ DRAMATIC FATE CARDS (Ch03) ══════════════════════════════════════════ */
+    .ra-fate-row {
+      display: flex; gap: 1rem; height: 380px; perspective: 1500px;
+      transition: gap 0.5s ease;
+    }
+    .ra-fate {
+      flex: 1; padding: 2rem; background: #fff; cursor: pointer;
+      border: 1px solid rgba(45,36,22,0.1); position: relative; overflow: hidden;
+      transition: flex 0.5s cubic-bezier(0.4,0,0.2,1),
+                  background 0.5s ease, transform 0.5s ease,
+                  filter 0.5s ease, box-shadow 0.5s ease;
+      display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .ra-fate-num {
+      position: absolute; right: 1.2rem; top: 0.5rem;
+      font-family: 'Playfair Display', serif; font-size: 5rem;
+      color: rgba(201,162,39,0.06); font-weight: 700; line-height: 1;
+    }
+    .ra-fate-row:hover .ra-fate:not(:hover) {
+      flex: 0.6; filter: grayscale(0.5) brightness(0.92);
+      transform: scale(0.97);
+    }
+    .ra-fate:hover {
+      flex: 2; box-shadow: 0 30px 60px rgba(45,36,22,0.15);
+      transform: scale(1.02); z-index: 2;
+    }
+    .ra-fate-desc {
+      max-height: 0; opacity: 0; overflow: hidden;
+      transition: max-height 0.5s ease 0.1s, opacity 0.4s ease 0.2s;
+    }
+    .ra-fate:hover .ra-fate-desc {
+      max-height: 200px; opacity: 1;
+    }
+    .ra-fate-hint {
+      color: rgba(45,36,22,0.4); font-size: 0.75rem;
+      letter-spacing: 0.15em; transition: opacity 0.3s ease;
+    }
+    .ra-fate:hover .ra-fate-hint { opacity: 0; }
+
+    /* ══ ACTION CARD (writeable) ═════════════════════════════════════════════ */
+    .ra-action {
+      margin: 4rem 0 0; padding: 2.5rem; background: #fff;
+      border: 1px dashed rgba(201,162,39,0.5); position: relative;
+    }
+    .ra-action::before {
+      content: '行动卡 / ACTION'; position: absolute; top: -10px; left: 2rem;
+      background: #fff; padding: 0 0.8rem; color: #C9A227;
+      font-size: 0.7rem; letter-spacing: 0.3em;
+    }
+    .ra-action h4 {
+      font-size: 1.15rem; color: #2D2416; font-weight: 500;
+      margin-bottom: 0.5rem; letter-spacing: 0.05em;
+    }
+    .ra-action-prompt {
+      color: rgba(45,36,22,0.65); font-size: 0.9rem;
+      line-height: 1.8; margin-bottom: 1.5rem;
+    }
+    .ra-action-textarea {
+      width: 100%; min-height: 100px; padding: 1rem;
+      border: 1px solid rgba(45,36,22,0.15); background: #FAF8F3;
+      font-family: inherit; font-size: 0.95rem; line-height: 1.7;
+      color: #2D2416; resize: vertical; outline: none;
+      transition: border-color 0.3s ease;
+    }
+    .ra-action-textarea:focus { border-color: #C9A227; }
+
+    /* ── Quick-pick chips ── */
+    .ra-chips {
+      display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;
+    }
+    .ra-chip {
+      padding: 0.5rem 1rem; background: #FAF8F3;
+      border: 1px solid rgba(45,36,22,0.15); color: #5a4020;
+      font-family: inherit; font-size: 0.85rem; cursor: pointer;
+      transition: all 0.25s ease; line-height: 1.4;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      border-radius: 20px;
+    }
+    .ra-chip:hover {
+      background: #fff; border-color: #C9A227; color: #2D2416;
+      transform: translateY(-1px);
+    }
+    .ra-chip.selected {
+      background: #2D2416; color: #C9A227;
+      border-color: #2D2416;
+    }
+    .ra-chip.selected:hover { background: #2D2416; color: #C9A227; }
+    .ra-chip-other {
+      border-style: dashed; color: rgba(45,36,22,0.55);
+    }
+    .ra-chip-other:hover { color: #C9A227; }
+    .ra-chips-hint {
+      color: rgba(45,36,22,0.45); font-size: 0.75rem;
+      letter-spacing: 0.1em; margin-bottom: 0.7rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .ra-chips-hint::before, .ra-chips-hint::after {
+      content: ''; flex: 1; height: 1px; background: rgba(45,36,22,0.08);
+    }
+    .ra-action-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 1rem; gap: 1rem;
+    }
+    .ra-action-save {
+      background: #2D2416; color: #C9A227; border: none; padding: 0.7rem 1.8rem;
+      font-family: inherit; font-size: 0.85rem; letter-spacing: 0.2em;
+      cursor: pointer; transition: all 0.3s ease;
+    }
+    .ra-action-save:hover { background: #C9A227; color: #2D2416; }
+    .ra-action-save.saved { background: rgba(201,162,39,0.2); color: #8B6914; }
+    .ra-action-meta {
+      color: rgba(45,36,22,0.4); font-size: 0.7rem; letter-spacing: 0.15em;
+    }
+
+    /* ══ PREFACE (序) ════════════════════════════════════════════════════════ */
+    .ra-preface {
+      min-height: 100vh; background:
+        radial-gradient(ellipse at 30% 25%, rgba(201,162,39,0.10) 0%, transparent 55%),
+        radial-gradient(ellipse at 75% 75%, rgba(201,162,39,0.06) 0%, transparent 55%),
+        #0B0805;
+      color: #FAF8F3;
+      display: flex; align-items: center; justify-content: center;
+      padding: 6rem 3rem; position: relative; overflow: hidden;
+    }
+    /* Subtle vertical golden meditation line on left */
+    .ra-preface::before {
+      content: ''; position: absolute;
+      left: clamp(2rem, 8vw, 7rem); top: 12vh; bottom: 12vh; width: 1px;
+      background: linear-gradient(to bottom,
+        transparent 0%, rgba(201,162,39,0.3) 25%,
+        rgba(201,162,39,0.5) 50%, rgba(201,162,39,0.3) 75%, transparent 100%);
+      pointer-events: none;
+    }
+    /* Decorative giant glyph */
+    .ra-preface-glyph {
+      position: absolute; right: -2rem; bottom: -6rem;
+      font-family: 'Playfair Display', 'Noto Serif SC', serif;
+      font-size: clamp(22rem, 38vw, 38rem);
+      color: rgba(201,162,39,0.045); line-height: 1; font-weight: 700;
+      pointer-events: none; user-select: none; letter-spacing: -0.05em;
+    }
+    .ra-preface-content {
+      max-width: 700px; position: relative; z-index: 1;
+      padding-left: clamp(0px, 4vw, 3rem);
+    }
+
+    /* Heading area */
+    .ra-preface-eyebrow {
+      color: rgba(201,162,39,0.55); font-size: 0.7rem;
+      letter-spacing: 0.55em; margin-bottom: 1.5rem;
+      display: flex; align-items: center; gap: 1rem;
+    }
+    .ra-preface-eyebrow::after {
+      content: ''; flex: 1; height: 1px; background: rgba(201,162,39,0.2);
+    }
+    .ra-preface-title {
+      font-family: 'Playfair Display', 'Noto Serif SC', serif;
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      color: #FAF8F3; font-weight: 400;
+      letter-spacing: 0.18em; margin-bottom: 4rem;
+      opacity: 0.85;
+    }
+
+    /* Body lines */
+    .ra-preface-line {
+      font-family: 'Noto Serif SC', serif;
+      font-size: clamp(1rem, 1.5vw, 1.18rem);
+      line-height: 2.4;
+      color: rgba(250,248,243,0.78);
+      margin-bottom: 1.8rem;
+      letter-spacing: 0.04em;
+    }
+    .ra-preface-line strong {
+      color: #C9A227; font-weight: 500;
+      text-shadow: 0 0 16px rgba(201,162,39,0.25);
+    }
+    /* Lead lines (the three "重复" mantras) */
+    .ra-preface-lead {
+      font-family: 'Playfair Display', 'Noto Serif SC', serif;
+      font-size: clamp(1.7rem, 3.2vw, 2.6rem);
+      line-height: 1.5; letter-spacing: 0.05em;
+      color: #C9A227; font-style: italic;
+      margin: 3rem 0; padding-left: 1.5rem;
+      border-left: 2px solid rgba(201,162,39,0.4);
+      text-shadow: 0 0 30px rgba(201,162,39,0.2);
+    }
+    .ra-preface-lead.final {
+      font-size: clamp(1.4rem, 2.5vw, 2rem);
+      color: #FAF8F3; opacity: 0.9; font-style: normal;
+      letter-spacing: 0.15em;
+    }
+    .ra-preface-divider {
+      width: 60px; height: 1px; background: rgba(201,162,39,0.35);
+      margin: 2.5rem 0;
+    }
+
+    /* Enter row at bottom */
+    .ra-preface-enter {
+      margin-top: 4rem; display: flex; align-items: center;
+      gap: 2rem; flex-wrap: wrap;
+    }
+
+    /* ══ ANCHOR NAV (right floating mini-toc) ════════════════════════════════ */
+    .ra-anchors {
+      position: fixed; right: 2rem; top: 50%; transform: translateY(-50%);
+      display: flex; flex-direction: column; gap: 1rem; z-index: 80;
+    }
+    .ra-anchor {
+      display: flex; align-items: center; gap: 0.8rem; cursor: pointer;
+      color: rgba(45,36,22,0.4); transition: all 0.3s ease;
+      font-size: 0.7rem; letter-spacing: 0.1em;
+    }
+    .ra-anchor-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: rgba(201,162,39,0.3); transition: all 0.3s ease;
+    }
+    .ra-anchor:hover { color: #C9A227; }
+    .ra-anchor:hover .ra-anchor-dot { background: #C9A227; }
+    .ra-anchor.active {
+      color: #C9A227;
+    }
+    .ra-anchor.active .ra-anchor-dot {
+      background: #C9A227; transform: scale(1.5);
+      box-shadow: 0 0 8px rgba(201,162,39,0.6);
+    }
+    .ra-anchor-label {
+      max-width: 0; overflow: hidden; white-space: nowrap;
+      transition: max-width 0.3s ease;
+    }
+    .ra-anchor:hover .ra-anchor-label,
+    .ra-anchor.active .ra-anchor-label { max-width: 200px; }
+    @media (max-width: 1100px) { .ra-anchors { display: none; } }
+
+    /* ══ BACK TO TOP BUTTON ══════════════════════════════════════════════════ */
+    .ra-totop {
+      position: fixed; right: 2rem; bottom: 2rem; width: 44px; height: 44px;
+      background: #2D2416; color: #C9A227; border: 1px solid rgba(201,162,39,0.3);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      opacity: 0; transform: translateY(10px); transition: all 0.3s ease;
+      z-index: 150; pointer-events: none;
+    }
+    .ra-totop.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+    .ra-totop:hover { background: #C9A227; color: #2D2416; }
+
+    /* ══ KEYBOARD HINT (subtle) ══════════════════════════════════════════════ */
+    .ra-kbd {
+      display: inline-block; padding: 2px 6px; min-width: 18px; text-align: center;
+      border: 1px solid rgba(201,162,39,0.3); border-bottom-width: 2px;
+      font-family: 'Playfair Display', serif; font-size: 0.7rem;
+      color: rgba(201,162,39,0.7); margin: 0 2px;
+    }
+
+    /* ══ CHAPTER HERO SVG DECORATIONS ════════════════════════════════════════ */
+    .ra-hero-deco {
+      position: absolute; right: 2rem; top: 50%; transform: translateY(-50%);
+      width: clamp(120px, 18vw, 220px); height: clamp(120px, 18vw, 220px);
+      opacity: 0.85; pointer-events: none;
+    }
+    .ra-hero-deco svg { width: 100%; height: 100%; }
+    @media (max-width: 900px) { .ra-hero-deco { display: none; } }
+
+    /* ══ SPIRAL ANIMATION (Ch02) ═════════════════════════════════════════════ */
+    @keyframes ra-spin-slow { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+    .ra-spin { animation: ra-spin-slow 80s linear infinite; transform-origin: center; }
+
+    /* ══ DIRECTORY HERO BIG GLYPH ════════════════════════════════════════════ */
+    .ra-dir-glyph {
+      position: absolute; right: -2rem; top: -3rem; font-family: 'Playfair Display', serif;
+      font-size: clamp(14rem, 22vw, 22rem); color: rgba(201,162,39,0.05);
+      line-height: 1; font-weight: 700; pointer-events: none; user-select: none;
+      letter-spacing: -0.05em;
+    }
+
+    /* ══ PULL QUOTE BLOCK (full bleed) ═══════════════════════════════════════ */
+    .ra-bigquote {
+      position: relative; padding: 4rem 2rem; margin: 4rem 0;
+      text-align: center; border-top: 1px solid rgba(201,162,39,0.2);
+      border-bottom: 1px solid rgba(201,162,39,0.2);
+    }
+    .ra-bigquote-text {
+      font-family: 'Playfair Display','Noto Serif SC',serif;
+      font-size: clamp(1.5rem, 3.2vw, 2.4rem); line-height: 1.6;
+      color: #2D2416; font-style: italic; max-width: 720px; margin: 0 auto;
+    }
+    .ra-bigquote-text strong { color: #C9A227; font-weight: 400; font-style: normal; }
+    .ra-bigquote::before, .ra-bigquote::after {
+      content: ''; position: absolute; left: 50%; transform: translateX(-50%);
+      width: 40px; height: 1px; background: #C9A227;
+    }
+    .ra-bigquote::before { top: -1px; }
+    .ra-bigquote::after  { bottom: -1px; }
+
     @media (max-width: 768px) {
       .ra-sidebar { display: none; }
       .ra-main { width: 100%; }
+      .ra-progress { left: 0; }
+      .ra-chap-nav { grid-template-columns: 1fr; }
     }
   `}</style>
 );
@@ -247,8 +833,33 @@ const LandingPage = ({ onEnter }) => {
 
   const handleEnter = () => { setTransitioning(true); setTimeout(onEnter, 1200); };
 
+  // generate floating dust particles
+  const dust = Array.from({ length: 18 }, (_, i) => ({
+    left: `${(i * 53) % 100}%`,
+    delay: `${(i * 0.7) % 12}s`,
+    duration: `${10 + (i % 6)}s`,
+  }));
+
   return (
     <div className={`ra-landing ${transitioning ? 'ra-out' : ''}`}>
+      {/* Floating gold dust */}
+      {dust.map((d, i) => (
+        <span key={i} className="ra-dust"
+              style={{ left: d.left, animationDelay: d.delay, animationDuration: d.duration }} />
+      ))}
+
+      {/* Corner brand */}
+      <div className="ra-landing-corner tl">
+        <div style={{ color:'#C9A227', fontSize:'0.75rem', letterSpacing:'0.25em', marginBottom:'0.3rem' }}>
+          REPEAT · AI
+        </div>
+        <div style={{ fontSize:'0.6rem', opacity:0.6 }}>封装手册 · Vol.001</div>
+      </div>
+      <div className="ra-landing-corner tr">MMXXVI</div>
+      <div className="ra-landing-corner br">
+        把一个道理 · 重复到身体里
+      </div>
+
       {/* Phrases */}
       <p className={`ra-phrase ${phase === 1 ? 'show' : phase > 1 ? 'hide' : ''}`}>
         你不缺道理
@@ -258,14 +869,14 @@ const LandingPage = ({ onEnter }) => {
         你缺的，是把道理重复到身体里的能力
       </p>
 
-      {/* Door */}
+      {/* Two-door split (cinematic) */}
       {phase >= 3 && (
         <div className="ra-door-wrap">
-          <div className={`ra-door ${crackVisible ? 'open' : ''}`}
-               style={{ transformOrigin: 'left center' }}>
-            <div className="ra-door-face">
-              <span className="ra-door-glyph">重</span>
-            </div>
+          <div className={`ra-door left ${crackVisible ? 'open' : ''}`}>
+            <span className="ra-door-glyph-half">重</span>
+          </div>
+          <div className={`ra-door right ${crackVisible ? 'open' : ''}`}>
+            <span className="ra-door-glyph-half">重</span>
           </div>
           <div className={`ra-crack ${crackVisible ? 'show' : ''}`} />
         </div>
@@ -304,35 +915,554 @@ const LandingPage = ({ onEnter }) => {
   );
 };
 
-// ── Sidebar ───────────────────────────────────────────────────────────────────
-const Sidebar = ({ active, onNav }) => {
-  const items = [
-    { id: 'directory', label: '目录',           icon: <BookMarked size={13} /> },
-    { id: 'ch01',      label: 'Ch01 · 为什么重复', icon: <Repeat    size={13} /> },
-    { id: 'ch02',      label: 'Ch02 · 如何重复',   icon: <RotateCcw  size={13} /> },
-    { id: 'ch03',      label: 'Ch03 · AI世界观',   icon: <Brain      size={13} /> },
-    { id: 'ch04',      label: 'Ch04 · AI用法',     icon: <Cpu        size={13} /> },
-    { id: 'outro',     label: '尾声',              icon: <Star       size={13} /> },
-  ];
+// ── SVG Hero Decorations ─────────────────────────────────────────────────────
+const HeroDecoCh01 = () => ( // 5 horizontal bars deepening
+  <div className="ra-hero-deco">
+    <svg viewBox="0 0 200 200">
+      {[1,2,3,4,5].map(i => (
+        <rect key={i} x={20} y={i*30 - 10} width={160} height={4}
+              fill="#C9A227" opacity={0.15 + i * 0.15} />
+      ))}
+      <text x={100} y={185} textAnchor="middle" fontSize="9"
+            fill="#C9A227" opacity={0.6} letterSpacing="2">
+        DEEPENING
+      </text>
+    </svg>
+  </div>
+);
+
+const HeroDecoCh02 = () => ( // spiral
+  <div className="ra-hero-deco">
+    <svg viewBox="0 0 200 200">
+      <g className="ra-spin">
+        <path d="M100,100 m-70,0 a70,70 0 1,0 140,0 a70,70 0 1,0 -140,0"
+              fill="none" stroke="#C9A227" strokeWidth="0.7" opacity="0.4" />
+        <path d="M100,100 m-50,0 a50,50 0 1,0 100,0 a50,50 0 1,0 -100,0"
+              fill="none" stroke="#C9A227" strokeWidth="0.7" opacity="0.5" />
+        <path d="M100,100 m-30,0 a30,30 0 1,0 60,0 a30,30 0 1,0 -60,0"
+              fill="none" stroke="#C9A227" strokeWidth="0.7" opacity="0.6" />
+      </g>
+      {/* spiraling path */}
+      <path d="M 100 100 m -10 0 q 0 -10 10 -10 q 20 0 20 20 q 0 30 -30 30 q -40 0 -40 -40 q 0 -50 50 -50 q 60 0 60 60"
+            fill="none" stroke="#C9A227" strokeWidth="1.5" opacity="0.8" />
+      <circle cx="160" cy="40" r="3" fill="#C9A227" />
+    </svg>
+  </div>
+);
+
+const HeroDecoCh03 = () => ( // mining contrast: dot vs pickaxe wedge
+  <div className="ra-hero-deco">
+    <svg viewBox="0 0 200 200">
+      <g opacity="0.3">
+        {Array.from({length: 20}).map((_, i) => (
+          <circle key={i} cx={20 + (i*23) % 160} cy={20 + ((i*47) % 160)}
+                  r={1 + (i % 3)} fill="#C9A227" />
+        ))}
+      </g>
+      <line x1="40" y1="100" x2="160" y2="100" stroke="#C9A227" strokeWidth="0.5" opacity="0.5" />
+      <text x="40" y="92" fontSize="11" fill="#C9A227" opacity="0.6"
+            fontFamily="Playfair Display" fontStyle="italic">ore</text>
+      <text x="160" y="115" fontSize="11" fill="#C9A227" opacity="0.9" textAnchor="end"
+            fontFamily="Playfair Display" fontStyle="italic">miner</text>
+      <path d="M 100 60 L 100 140 M 80 80 L 120 80" stroke="#C9A227" strokeWidth="2" opacity="0.8" />
+    </svg>
+  </div>
+);
+
+const HeroDecoCh04 = () => ( // closed loop with 5 nodes
+  <div className="ra-hero-deco">
+    <svg viewBox="0 0 200 200">
+      <circle cx="100" cy="100" r="65" fill="none" stroke="#C9A227"
+              strokeWidth="0.8" opacity="0.4" strokeDasharray="3 3" />
+      {[0,1,2,3,4].map(i => {
+        const angle = (i * 72 - 90) * Math.PI / 180;
+        const x = 100 + Math.cos(angle) * 65;
+        const y = 100 + Math.sin(angle) * 65;
+        return (
+          <g key={i}>
+            <circle cx={x} cy={y} r={i === 0 ? 8 : 5}
+                    fill={i === 0 ? '#C9A227' : '#FAF8F3'}
+                    stroke="#C9A227" strokeWidth="1.5" />
+            <text x={x} y={y + 3} textAnchor="middle" fontSize="7"
+                  fill={i === 0 ? '#FAF8F3' : '#C9A227'}
+                  fontFamily="Playfair Display" fontWeight="600">
+              {i + 1}
+            </text>
+          </g>
+        );
+      })}
+      <text x="100" y="105" textAnchor="middle" fontSize="9"
+            fill="#C9A227" opacity="0.5" letterSpacing="2">LOOP</text>
+    </svg>
+  </div>
+);
+
+// ── Action Card (chips + optional textarea, persisted to localStorage) ──────
+const ActionCard = ({ id, title, prompts, chips, chipsLabel, placeholder, hint }) => {
+  const key = `ra-action-${id}`;
+  const [picked, setPicked] = useState([]);     // selected chip values
+  const [custom, setCustom] = useState('');     // free-text "其他" content
+  const [showCustom, setShowCustom] = useState(false);
+  const [savedAt, setSavedAt] = useState(null);
+  const [justSaved, setJustSaved] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const data = JSON.parse(raw);
+        setPicked(data.picked || []);
+        setCustom(data.custom || '');
+        if (data.custom && data.custom.trim()) setShowCustom(true);
+        setSavedAt(data.savedAt || null);
+      }
+    } catch (e) {}
+  }, [key]);
+
+  const togglePick = (chip) => {
+    setPicked(prev => prev.includes(chip)
+      ? prev.filter(c => c !== chip)
+      : [...prev, chip]);
+  };
+
+  const save = () => {
+    try {
+      // Compose human-readable saved value
+      const parts = [];
+      if (picked.length) parts.push(picked.join(' · '));
+      if (custom && custom.trim()) parts.push(custom.trim());
+      const value = parts.join('\n\n');
+
+      const ts = new Date().toLocaleString('zh-CN', { hour12: false });
+      localStorage.setItem(key, JSON.stringify({
+        picked, custom, value, savedAt: ts, title
+      }));
+      setSavedAt(ts);
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 1800);
+    } catch (e) {}
+  };
+
+  const hasContent = picked.length > 0 || (custom && custom.trim());
+
   return (
-    <nav className="ra-sidebar">
-      <div className="ra-sidebar-logo">
-        <div style={{ color: '#C9A227', fontSize: '0.7rem', letterSpacing: '0.3em', marginBottom: '0.4rem' }}>
-          REPEAT · AI
+    <div className="ra-action">
+      <h4>{title}</h4>
+      {prompts && (
+        <div className="ra-action-prompt">
+          {prompts.map((p, i) => (
+            <div key={i} style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.4rem' }}>
+              <span style={{ color: '#C9A227', flexShrink: 0 }}>·</span>
+              <span>{p}</span>
+            </div>
+          ))}
         </div>
-        <div style={{ color: 'rgba(250,248,243,0.3)', fontSize: '0.65rem', letterSpacing: '0.1em' }}>
-          封装手册 v1.0
-        </div>
+      )}
+
+      {chips && chips.length > 0 && (
+        <>
+          <div className="ra-chips-hint">{chipsLabel || '点击挑选 · 可多选'}</div>
+          <div className="ra-chips">
+            {chips.map((chip, i) => (
+              <button key={i} type="button"
+                      className={`ra-chip ${picked.includes(chip) ? 'selected' : ''}`}
+                      onClick={() => togglePick(chip)}>
+                {picked.includes(chip) && <span style={{fontSize:'0.7rem'}}>✓</span>}
+                {chip}
+              </button>
+            ))}
+            <button type="button"
+                    className={`ra-chip ra-chip-other ${showCustom ? 'selected' : ''}`}
+                    onClick={() => setShowCustom(s => !s)}>
+              {showCustom ? '✕ 收起' : '+ 其他（自己写）'}
+            </button>
+          </div>
+        </>
+      )}
+
+      {(showCustom || !chips) && (
+        <textarea className="ra-action-textarea" value={custom}
+                  onChange={e => setCustom(e.target.value)}
+                  placeholder={placeholder} />
+      )}
+
+      <div className="ra-action-row">
+        <span className="ra-action-meta">
+          {hint || '保存到本地浏览器 · 不上传任何服务器'}
+          {savedAt && ` · 已保存 ${savedAt}`}
+        </span>
+        <button className={`ra-action-save ${justSaved ? 'saved' : ''}`}
+                onClick={save}
+                disabled={!hasContent}
+                style={{ opacity: hasContent ? 1 : 0.4,
+                          cursor: hasContent ? 'pointer' : 'not-allowed' }}>
+          {justSaved ? '✓ 已保存' : '保 存'}
+        </button>
       </div>
-      {items.map(item => (
-        <div key={item.id}
-             className={`ra-nav-item ${active === item.id ? 'active' : ''}`}
-             onClick={() => onNav(item.id)}>
-          {item.icon}
-          <span>{item.label}</span>
+    </div>
+  );
+};
+
+// ── Preface Page (序：重复有万钧之力) ────────────────────────────────────────
+// Sequenced reveal with varying delays for breathing rhythm
+const PrefaceLine = ({ delay, className = 'ra-preface-line', children }) => {
+  const [shown, setShown] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const obs = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) {
+        setTimeout(() => setShown(true), delay);
+        obs.disconnect();
+      }
+    }, { threshold: 0.1 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, [delay]);
+  return (
+    <div ref={ref} className={className}
+         style={{ opacity: shown ? 1 : 0,
+                   transform: shown ? 'translateY(0)' : 'translateY(20px)',
+                   filter: shown ? 'blur(0)' : 'blur(8px)',
+                   transition: 'opacity 1.6s ease, transform 1.6s ease, filter 1.6s ease' }}>
+      {children}
+    </div>
+  );
+};
+
+const PrefacePage = ({ onNav }) => {
+  // Floating ambient dust
+  const dust = Array.from({ length: 14 }, (_, i) => ({
+    left: `${(i * 71) % 100}%`,
+    delay: `${(i * 0.9) % 12}s`,
+    duration: `${12 + (i % 5)}s`,
+  }));
+
+  return (
+    <section className="ra-preface">
+      {/* Ambient floating dust */}
+      {dust.map((d, i) => (
+        <span key={i} className="ra-dust"
+              style={{ left: d.left, animationDelay: d.delay, animationDuration: d.duration }} />
+      ))}
+
+      <span className="ra-preface-glyph">序</span>
+
+      <div className="ra-preface-content">
+        <PrefaceLine delay={200}>
+          <p className="ra-preface-eyebrow">PREFACE · 序</p>
+        </PrefaceLine>
+
+        <PrefaceLine delay={500}>
+          <h1 className="ra-preface-title">重复有万钧之力</h1>
+        </PrefaceLine>
+
+        {/* Mantra 1 */}
+        <PrefaceLine delay={1000} className="ra-preface-lead">
+          重复有万钧之力。
+        </PrefaceLine>
+
+        <PrefaceLine delay={1900}>
+          <p className="ra-preface-line">
+            要把一个道理，不停地<strong>重复</strong>，
+            直到长到你的<strong>血肉</strong>里面，
+            变成你的<strong>下意识</strong>，才叫你学会了它。
+          </p>
+        </PrefaceLine>
+
+        <PrefaceLine delay={2700}>
+          <p className="ra-preface-line">
+            人下意识会想追逐更新的、更好的——殊不知，
+            这只是<strong>多巴胺的意志</strong>。
+            它只是想要更多的信息娱乐你。
+          </p>
+        </PrefaceLine>
+
+        <PrefaceLine delay={3500}>
+          <div className="ra-preface-divider" />
+        </PrefaceLine>
+
+        <PrefaceLine delay={3900}>
+          <p className="ra-preface-line">
+            真的改变，来自于你的<strong>习惯</strong>——
+            是你的纹状体，是你的基底核，是一种<strong>自动化</strong>。
+          </p>
+        </PrefaceLine>
+
+        <PrefaceLine delay={4800}>
+          <p className="ra-preface-line">
+            是在你最关键、最痛苦、最自我批判的时候，
+            <strong>它依旧出现</strong>，
+            拦住了你的堕落，斥退了你的旧反应。
+          </p>
+        </PrefaceLine>
+
+        <PrefaceLine delay={5700}>
+          <p className="ra-preface-line" style={{ textAlign: 'left' }}>
+            旧我新我，<strong>楚河汉界</strong>——
+            自此一刀两断。
+          </p>
+        </PrefaceLine>
+
+        {/* Mantra 2 — the heartbeat */}
+        <PrefaceLine delay={6700} className="ra-preface-lead">
+          重复，重复，重复。
+        </PrefaceLine>
+
+        {/* Mantra 3 — the resting note */}
+        <PrefaceLine delay={7600} className="ra-preface-lead final">
+          改变的力量，寄居于此。
+        </PrefaceLine>
+
+        <PrefaceLine delay={8800}>
+          <div className="ra-preface-enter">
+            <button onClick={() => onNav('directory')}
+                    style={{ background: 'transparent', border: '1px solid #C9A227',
+                              color: '#C9A227', padding: '1rem 2.8rem',
+                              fontFamily: "'Noto Serif SC',serif", fontSize: '0.95rem',
+                              letterSpacing: '0.3em', cursor: 'pointer',
+                              transition: 'all 0.4s ease' }}
+                    onMouseEnter={e => { e.target.style.background = '#C9A227'; e.target.style.color = '#0B0805'; }}
+                    onMouseLeave={e => { e.target.style.background = 'transparent'; e.target.style.color = '#C9A227'; }}>
+              进入目录 →
+            </button>
+            <span style={{ color: 'rgba(201,162,39,0.4)', fontSize: '0.7rem',
+                            letterSpacing: '0.2em', display: 'flex',
+                            alignItems: 'center', gap: '0.4rem' }}>
+              或按 <span className="ra-kbd">→</span> 直接进入
+            </span>
+          </div>
+        </PrefaceLine>
+      </div>
+    </section>
+  );
+};
+
+// ── Chapter Entrance Overlay (full-screen ceremony) ─────────────────────────
+const ChapterEntrance = ({ pageId, navKey }) => {
+  // Only show for actual chapters
+  const chapterMap = {
+    preface: { num: '序', label: 'PREFACE',        title: '重复有万钧之力' },
+    ch01:    { num: '01', label: 'CHAPTER ONE',    title: '为什么要重复' },
+    ch02:    { num: '02', label: 'CHAPTER TWO',    title: '如何重复' },
+    ch03:    { num: '03', label: 'CHAPTER THREE',  title: 'AI 世界观' },
+    ch04:    { num: '04', label: 'CHAPTER FOUR',   title: 'AI 使用方法' },
+    outro:   { num: '∞',  label: 'FINALE',         title: '把它重复到身体里' },
+  };
+  const meta = chapterMap[pageId];
+  if (!meta) return null;
+  return (
+    <div className="ra-entrance" key={navKey}>
+      {/* Two curtain panels — close in to cover, then split apart to reveal */}
+      <div className="ra-entrance-curtain left" />
+      <div className="ra-entrance-curtain right" />
+      {/* Golden seam where the curtains meet */}
+      <div className="ra-entrance-seam" />
+      {/* Content (number / label / title / bar) sits centered above curtains */}
+      <div className="ra-entrance-content">
+        <div className="ra-entrance-num">{meta.num}</div>
+        <div className="ra-entrance-label">{meta.label}</div>
+        <div className="ra-entrance-title">{meta.title}</div>
+        <div className="ra-entrance-bar" />
+      </div>
+    </div>
+  );
+};
+
+// ── Mouse Glow (subtle follower) ─────────────────────────────────────────────
+const MouseGlow = () => {
+  const ref = useRef(null);
+  useEffect(() => {
+    const onMove = (e) => {
+      if (ref.current) {
+        ref.current.style.left = e.clientX + 'px';
+        ref.current.style.top  = e.clientY + 'px';
+      }
+    };
+    window.addEventListener('mousemove', onMove, { passive: true });
+    return () => window.removeEventListener('mousemove', onMove);
+  }, []);
+  return <div ref={ref} className="ra-glow" />;
+};
+
+// ── Ink Reveal (line-by-line on scroll) ──────────────────────────────────────
+const InkReveal = ({ lines, as: Tag = 'div', style, lineStyle, delay = 80 }) => {
+  const ref = useRef(null);
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    const obs = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) {
+        lines.forEach((_, i) =>
+          setTimeout(() => setShown(s => Math.max(s, i + 1)), i * delay)
+        );
+        obs.disconnect();
+      }
+    }, { threshold: 0.3 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, [lines, delay]);
+  return (
+    <Tag ref={ref} style={style}>
+      {lines.map((line, i) => (
+        <span key={i} className={`ra-ink-line ${i < shown ? 'shown' : ''}`}
+              style={lineStyle}>
+          {line}
+        </span>
+      ))}
+    </Tag>
+  );
+};
+
+// ── Anchor Nav (floating right-side mini-TOC) ────────────────────────────────
+const AnchorNav = ({ scrollEl, items }) => {
+  const [active, setActive] = useState(0);
+  useEffect(() => {
+    const el = scrollEl?.current;
+    if (!el) return;
+    const onScroll = () => {
+      const probe = el.scrollTop + el.clientHeight * 0.3;
+      let curr = 0;
+      items.forEach((it, i) => {
+        const node = document.getElementById(it.id);
+        if (node && node.offsetTop <= probe) curr = i;
+      });
+      setActive(curr);
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [scrollEl, items]);
+  const goTo = (id) => {
+    const node = document.getElementById(id);
+    const el = scrollEl?.current;
+    if (node && el) el.scrollTo({ top: node.offsetTop - 40, behavior: 'smooth' });
+  };
+  return (
+    <nav className="ra-anchors">
+      {items.map((it, i) => (
+        <div key={it.id} className={`ra-anchor ${i === active ? 'active' : ''}`}
+             onClick={() => goTo(it.id)}>
+          <span className="ra-anchor-label">{it.label}</span>
+          <span className="ra-anchor-dot" />
         </div>
       ))}
     </nav>
+  );
+};
+
+// ── Back to top button ───────────────────────────────────────────────────────
+const BackToTop = ({ scrollEl, threshold = 400 }) => {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const el = scrollEl?.current;
+    if (!el) return;
+    const onScroll = () => setShow(el.scrollTop > threshold);
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [scrollEl, threshold]);
+  return (
+    <button className={`ra-totop ${show ? 'show' : ''}`}
+            onClick={() => scrollEl.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+            aria-label="Back to top">
+      <ChevronUp size={18} />
+    </button>
+  );
+};
+
+// ── Sidebar ───────────────────────────────────────────────────────────────────
+export const PAGE_ORDER = ['preface', 'directory', 'ch01', 'ch02', 'ch03', 'ch04', 'outro'];
+export const PAGE_META = {
+  preface:   { label: '序 · 万钧之力',     icon: <Feather    size={13} />, time: '2 min' },
+  directory: { label: '目录',              icon: <BookMarked size={13} />, time: '1 min' },
+  ch01:      { label: 'Ch01 · 为什么重复', icon: <Repeat    size={13} />, time: '6 min' },
+  ch02:      { label: 'Ch02 · 如何重复',   icon: <RotateCcw  size={13} />, time: '7 min' },
+  ch03:      { label: 'Ch03 · AI世界观',   icon: <Brain      size={13} />, time: '6 min' },
+  ch04:      { label: 'Ch04 · AI用法',     icon: <Cpu        size={13} />, time: '8 min' },
+  outro:     { label: '尾声 · 你的痕迹',   icon: <Star       size={13} />, time: '3 min' },
+};
+
+const Sidebar = ({ active, onNav }) => {
+  const idx = PAGE_ORDER.indexOf(active);
+  const progress = ((idx + 1) / PAGE_ORDER.length) * 100;
+
+  return (
+    <nav className="ra-sidebar">
+      <div className="ra-sidebar-logo">
+        <div style={{ color: '#C9A227', fontSize: '0.75rem', letterSpacing: '0.3em', marginBottom: '0.4rem' }}>
+          REPEAT · AI
+        </div>
+        <div style={{ color: 'rgba(250,248,243,0.3)', fontSize: '0.65rem', letterSpacing: '0.1em' }}>
+          封装手册 · Vol.001
+        </div>
+      </div>
+
+      {PAGE_ORDER.map((id, i) => {
+        const item = PAGE_META[id];
+        const isActive = active === id;
+        return (
+          <div key={id}
+               className={`ra-nav-item ${isActive ? 'active' : ''}`}
+               onClick={() => onNav(id)}
+               style={{ position: 'relative' }}>
+            {item.icon}
+            <span style={{ flex: 1 }}>{item.label}</span>
+            {isActive && <span className="ra-pulse" />}
+            {!isActive && (
+              <span style={{ fontSize: '0.6rem', opacity: 0.4, letterSpacing: 0 }}>
+                {item.time}
+              </span>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Reading progress + keyboard hint */}
+      <div style={{ marginTop: 'auto', padding: '1.5rem', borderTop: '1px solid rgba(201,162,39,0.1)' }}>
+        <div style={{ color: 'rgba(201,162,39,0.4)', fontSize: '0.6rem',
+                       letterSpacing: '0.2em', marginBottom: '0.5rem',
+                       display: 'flex', justifyContent: 'space-between' }}>
+          <span>READING</span>
+          <span>{Math.round(progress)}%</span>
+        </div>
+        <div style={{ height: 2, background: 'rgba(201,162,39,0.15)', overflow: 'hidden', marginBottom: '1.2rem' }}>
+          <div style={{ width: `${progress}%`, height: '100%',
+                         background: 'linear-gradient(90deg,#C9A227,#e8c84a)',
+                         transition: 'width 0.5s ease' }} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem',
+                       color: 'rgba(201,162,39,0.45)', fontSize: '0.6rem',
+                       letterSpacing: '0.1em' }}>
+          <span className="ra-kbd">←</span>
+          <span className="ra-kbd">→</span>
+          <span style={{ marginLeft: '0.4rem' }}>切换章节</span>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+// ── Chapter footer nav (prev/next) ───────────────────────────────────────────
+const ChapterNav = ({ current, onNav }) => {
+  const idx = PAGE_ORDER.indexOf(current);
+  const prev = idx > 0 ? PAGE_ORDER[idx - 1] : null;
+  const next = idx < PAGE_ORDER.length - 1 ? PAGE_ORDER[idx + 1] : null;
+  return (
+    <div className="ra-chap-nav">
+      <div className={`ra-chap-nav-item ${!prev ? 'disabled' : ''}`}
+           onClick={() => prev && onNav(prev)}>
+        <div className="ra-chap-nav-label">
+          <ArrowLeft size={11} /> 上一章
+        </div>
+        {prev && <div className="ra-chap-nav-title">{PAGE_META[prev].label.replace(/^Ch\d+ · /,'')}</div>}
+      </div>
+      <div className={`ra-chap-nav-item ${!next ? 'disabled' : ''}`}
+           onClick={() => next && onNav(next)}
+           style={{ textAlign: 'right', alignItems: 'flex-end' }}>
+        <div className="ra-chap-nav-label" style={{ justifyContent: 'flex-end' }}>
+          下一章 <ArrowRight size={11} />
+        </div>
+        {next && <div className="ra-chap-nav-title">{PAGE_META[next].label.replace(/^Ch\d+ · /,'')}</div>}
+      </div>
+    </div>
   );
 };
 
@@ -357,15 +1487,21 @@ const DirectoryPage = ({ onNav }) => {
       tags: ['六轮追问', '工具分工', '封装入库'] },
   ];
   return (
-    <section style={{ background: '#FAF8F3', padding: '5rem 3rem', minHeight: '100vh' }}>
-      <div style={{ maxWidth: 960, margin: '0 auto' }}>
+    <section style={{ background: '#FAF8F3', padding: '5rem 3rem', minHeight: '100vh',
+                       position: 'relative', overflow: 'hidden' }}>
+      <span className="ra-dir-glyph">复</span>
+      <div style={{ maxWidth: 960, margin: '0 auto', position: 'relative', zIndex: 1 }}>
         <p style={{ color: '#C9A227', fontSize: '0.75rem', letterSpacing: '0.4em', marginBottom: '1rem' }}>
-          TABLE OF CONTENTS
+          — TABLE OF CONTENTS —
         </p>
-        <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 'clamp(2rem,4vw,3rem)',
-                      color: '#2D2416', fontWeight: 400, marginBottom: '1.5rem' }}>
+        <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 'clamp(2.2rem,4.5vw,3.2rem)',
+                      color: '#2D2416', fontWeight: 400, marginBottom: '0.5rem' }}>
           全书目录
         </h2>
+        <p style={{ color: 'rgba(45,36,22,0.55)', fontSize: '0.85rem',
+                     letterSpacing: '0.1em', marginBottom: '1.5rem' }}>
+          四章 · 约 26 分钟阅读 · 推荐顺序阅读
+        </p>
         <div className="ra-quote" style={{ maxWidth: 600 }}>
           把一个道理重复到身体里，它才会变成你的人生。<br />
           把 AI 用到封装进工作流，它才会变成你的能力。
@@ -402,15 +1538,15 @@ const DirectoryPage = ({ onNav }) => {
 };
 
 // ── Chapter 01 ───────────────────────────────────────────────────────────────
-const Ch01Page = () => {
+const Ch01Page = ({ onNav }) => {
   const stageRef = useRef(null);
   const [shown, setShown] = useState([]);
   const stages = [
-    { n: '01', label: '信息', en: 'Information', desc: '你听到了这个道理，它进入你的认知层，但还只是一串文字。' },
-    { n: '02', label: '认同', en: 'Agreement',   desc: '你觉得有道理，内心产生共鸣——"说得对，就该这样。"' },
-    { n: '03', label: '执行', en: 'Action',       desc: '你开始尝试去做，一次或几次，但还不稳定。' },
-    { n: '04', label: '习惯', en: 'Habit',        desc: '你不需要提醒自己，这件事已经自动发生在生活里。' },
-    { n: '05', label: '气质', en: 'Character',    desc: '它成为你身体的一部分，别人能从你身上感受到它。' },
+    { n: '01', label: '信息', en: 'Information', depth: 1, desc: '你听到了这个道理，它进入你的认知层，但还只是一串文字。' },
+    { n: '02', label: '认同', en: 'Agreement',   depth: 2, desc: '你觉得有道理，内心产生共鸣——"说得对，就该这样。"' },
+    { n: '03', label: '执行', en: 'Action',       depth: 3, desc: '你开始尝试去做，一次或几次，但还不稳定。' },
+    { n: '04', label: '习惯', en: 'Habit',        depth: 4, desc: '你不需要提醒自己，这件事已经自动发生在生活里。' },
+    { n: '05', label: '气质', en: 'Character',    depth: 5, desc: '它成为你身体的一部分，别人能从你身上感受到它。' },
   ];
 
   useEffect(() => {
@@ -429,10 +1565,11 @@ const Ch01Page = () => {
       {/* Hero */}
       <div className="ra-chapter-bg"
            style={{ background: 'linear-gradient(135deg,#FAF8F3 0%,#F0EBE0 100%)',
-                     padding: '6rem 3rem 4rem' }}>
+                     padding: '6rem 3rem 4rem', position: 'relative' }}>
+        <HeroDecoCh01 />
         <div style={{ maxWidth: 800, margin: '0 auto', position: 'relative', zIndex: 1 }}>
           <p style={{ color: '#C9A227', fontSize: '0.7rem', letterSpacing: '0.4em', marginBottom: '1.2rem' }}>
-            CHAPTER 01
+            CHAPTER 01 / 04
           </p>
           <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 'clamp(2rem,4vw,3.2rem)',
                         color: '#2D2416', fontWeight: 400, marginBottom: '1rem', lineHeight: 1.3 }}>
@@ -453,8 +1590,8 @@ const Ch01Page = () => {
 
       {/* Stages */}
       <div style={{ padding: '4rem 3rem', maxWidth: 800, margin: '0 auto' }}>
-        <h3 style={{ fontSize: '1.1rem', color: '#2D2416', letterSpacing: '0.1em',
-                      fontWeight: 500, marginBottom: '0.5rem' }}>
+        <h3 id="ch01-stages" style={{ fontSize: '1.1rem', color: '#2D2416', letterSpacing: '0.1em',
+                      fontWeight: 500, marginBottom: '0.5rem', scrollMarginTop: '40px' }}>
           道理进入身体的五个阶段
         </h3>
         <p style={{ color: 'rgba(45,36,22,0.55)', fontSize: '0.85rem', marginBottom: '2.5rem' }}>
@@ -467,14 +1604,22 @@ const Ch01Page = () => {
               <div className="ra-stage-num">{s.n}</div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.8rem', marginBottom: '0.4rem' }}>
-                  <span style={{ fontSize: '1.05rem', color: '#2D2416', fontWeight: 500 }}>{s.label}</span>
+                  <span style={{ fontSize: '1.1rem', color: '#2D2416', fontWeight: 500 }}>{s.label}</span>
                   <span style={{ fontSize: '0.7rem', color: '#C9A227', letterSpacing: '0.15em' }}>{s.en}</span>
+                  <span style={{ marginLeft: 'auto', fontSize: '0.65rem',
+                                   color: 'rgba(45,36,22,0.4)', letterSpacing: '0.1em' }}>
+                    深度 {s.depth}/5
+                  </span>
                 </div>
-                <p style={{ color: 'rgba(45,36,22,0.65)', fontSize: '0.9rem', lineHeight: 1.8 }}>{s.desc}</p>
+                <p style={{ color: 'rgba(45,36,22,0.65)', fontSize: '0.92rem',
+                              lineHeight: 1.8, marginBottom: '0.5rem' }}>{s.desc}</p>
+                {/* Intensity bar */}
+                <div className="ra-stage-bar">
+                  {[1,2,3,4,5].map(n => (
+                    <div key={n} className={`ra-stage-bar-cell ${n <= s.depth ? 'fill' : ''}`} />
+                  ))}
+                </div>
               </div>
-              {i < stages.length - 1 && (
-                <ChevronDown size={14} style={{ color: 'rgba(201,162,39,0.4)', marginTop: '0.5rem' }} />
-              )}
             </div>
           ))}
         </div>
@@ -485,17 +1630,23 @@ const Ch01Page = () => {
                          color: 'rgba(201,162,39,0.08)', fontWeight: 700, lineHeight: 1,
                          fontFamily: "'Playfair Display',serif" }}>KEY</div>
           <p style={{ color: '#C9A227', fontSize: '0.7rem', letterSpacing: '0.3em', marginBottom: '1rem' }}>核心洞察</p>
-          <p style={{ color: '#FAF8F3', fontSize: '1.05rem', lineHeight: 1.9 }}>
-            "认同"之后停下来，是大多数人的陷阱。<br />
-            收藏了、点赞了、转发了——<br />
-            但那个道理，从来没有进入过你的行为。<br />
-            <span style={{ color: '#C9A227' }}>重复，才是从认同到气质之间唯一的桥。</span>
-          </p>
+          <InkReveal
+            as="div"
+            style={{ color: '#FAF8F3', fontSize: '1.05rem', lineHeight: 2 }}
+            lineStyle={{ marginBottom: '0.3rem' }}
+            delay={250}
+            lines={[
+              '"认同"之后停下来，是大多数人的陷阱。',
+              '收藏了、点赞了、转发了——',
+              '但那个道理，从来没有进入过你的行为。',
+              <span style={{ color: '#C9A227' }} key="hl">重复，才是从认同到气质之间唯一的桥。</span>,
+            ]}
+          />
         </div>
 
         <div style={{ marginTop: '3rem' }}>
           <h3 style={{ fontSize: '1rem', color: '#2D2416', letterSpacing: '0.1em',
-                        fontWeight: 500, marginBottom: '1.5rem' }}>你可能有过这些体验</h3>
+                        fontWeight: 500, marginBottom: '1.5rem', scrollMarginTop: '40px' }} id="ch01-experience">你可能有过这些体验</h3>
           {[
             '读完一本书，三天后你只记得"这本书不错"',
             '听到一个人生道理，当天感动得热泪盈眶，第二天原样生活',
@@ -508,18 +1659,50 @@ const Ch01Page = () => {
               <p style={{ color: 'rgba(45,36,22,0.7)', fontSize: '0.9rem', lineHeight: 1.7 }}>{item}</p>
             </div>
           ))}
-          <div className="ra-quote" style={{ marginTop: '1.5rem' }}>
-            这不是意志力问题。这是方法论问题。<br />
-            你需要的不是更多道理，而是一套让道理落地的系统。
+          <div className="ra-bigquote">
+            <p className="ra-bigquote-text">
+              这不是意志力问题，<br />
+              这是<strong>方法论</strong>问题。
+            </p>
+            <p style={{ color: 'rgba(45,36,22,0.5)', fontSize: '0.8rem',
+                         letterSpacing: '0.2em', marginTop: '1.5rem',
+                         fontStyle: 'italic' }}>
+              — 你需要的不是更多道理，而是一套让道理落地的系统
+            </p>
           </div>
+
+          <ActionCard
+            id="ch01"
+            title="先写下一句话"
+            prompts={[
+              '读到这里，先不用急着改变全部生活。只做一件事：',
+              '挑一句你早就知道、但一直没有真正做到的道理。带着它，进入下一部分。',
+            ]}
+            chipsLabel="挑一个最戳你的（可多选）"
+            chips={[
+              '身体第一',
+              '注意力最重要',
+              '人生需要复利',
+              '不要反复归零',
+              '完成胜过完美',
+              '少即是多',
+              '深度比速度重要',
+              '长期主义',
+              '先做最小版本',
+              '不要消耗自己',
+            ]}
+            placeholder="或者写下你自己的那一句……"
+          />
         </div>
+
+        <ChapterNav current="ch01" onNav={onNav} />
       </div>
     </section>
   );
 };
 
 // ── Chapter 02 ───────────────────────────────────────────────────────────────
-const Ch02Page = () => {
+const Ch02Page = ({ onNav }) => {
   const [openMethod, setOpenMethod] = useState(null);
   const methods = [
     { n: '01', title: '物理重复', icon: <Layers size={18} />, sub: '最笨，最有效',
@@ -539,9 +1722,11 @@ const Ch02Page = () => {
   return (
     <section style={{ background: '#F5F2EB', minHeight: '100vh' }}>
       <div className="ra-chapter-bg"
-           style={{ background: 'linear-gradient(135deg,#F5F2EB 0%,#EDE5D0 100%)', padding: '6rem 3rem 4rem' }}>
+           style={{ background: 'linear-gradient(135deg,#F5F2EB 0%,#EDE5D0 100%)',
+                     padding: '6rem 3rem 4rem', position: 'relative' }}>
+        <HeroDecoCh02 />
         <div style={{ maxWidth: 800, margin: '0 auto', position: 'relative', zIndex: 1 }}>
-          <p style={{ color: '#C9A227', fontSize: '0.7rem', letterSpacing: '0.4em', marginBottom: '1.2rem' }}>CHAPTER 02</p>
+          <p style={{ color: '#C9A227', fontSize: '0.7rem', letterSpacing: '0.4em', marginBottom: '1.2rem' }}>CHAPTER 02 / 04</p>
           <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 'clamp(2rem,4vw,3.2rem)',
                         color: '#2D2416', fontWeight: 400, marginBottom: '1rem', lineHeight: 1.3 }}>如何重复</h2>
           <p style={{ fontSize: '1.2rem', color: '#8B6914', letterSpacing: '0.1em',
@@ -551,7 +1736,7 @@ const Ch02Page = () => {
 
       <div style={{ padding: '4rem 3rem', maxWidth: 900, margin: '0 auto' }}>
         <h3 style={{ fontSize: '1.1rem', color: '#2D2416', letterSpacing: '0.1em',
-                      fontWeight: 500, marginBottom: '0.5rem' }}>四种重复方式</h3>
+                      fontWeight: 500, marginBottom: '0.5rem', scrollMarginTop: '40px' }} id="ch02-methods">四种重复方式</h3>
         <p style={{ color: 'rgba(45,36,22,0.55)', fontSize: '0.85rem', marginBottom: '2.5rem' }}>点击每张卡片展开详解</p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(360px,1fr))',
@@ -604,17 +1789,49 @@ const Ch02Page = () => {
           </div>
         </div>
 
-        <div className="ra-quote">
-          重复的本质，是在用时间换取"不需要思考就能做对"的能力。<br />
-          当正确的事变成条件反射，你就自由了。
+        <div className="ra-bigquote">
+          <p className="ra-bigquote-text">
+            重复的本质，是在用时间<br />
+            换取<strong>"不需要思考就能做对"</strong>的能力。
+          </p>
+          <p style={{ color: 'rgba(45,36,22,0.5)', fontSize: '0.8rem',
+                       letterSpacing: '0.2em', marginTop: '1.5rem',
+                       fontStyle: 'italic' }}>
+            — 当正确的事变成条件反射，你就自由了
+          </p>
         </div>
+
+        <ActionCard
+          id="ch02"
+          title="挑你的重复方式"
+          prompts={[
+            '回到上一章那句话，决定你今天要怎么让它真的进入生活：',
+            '挑一个你最有可能做到的最小动作。',
+          ]}
+          chipsLabel="今天我准备这样重复它（可多选）"
+          chips={[
+            '写在手机壁纸',
+            '写在桌面便签',
+            '贴在书桌前',
+            '放进每日打开的笔记',
+            '每天起床读一遍',
+            '睡前问自己一遍',
+            '用它做今天一个决定',
+            '在写作里用一次',
+            '在关系里用一次',
+            '7 天后回来检查',
+          ]}
+          placeholder="或者写下你自己的具体做法……"
+        />
+
+        <ChapterNav current="ch02" onNav={onNav} />
       </div>
     </section>
   );
 };
 
 // ── Chapter 03 ───────────────────────────────────────────────────────────────
-const Ch03Page = () => {
+const Ch03Page = ({ onNav }) => {
   const [fate, setFate] = useState(null);
   const fates = [
     { label: '被替代', color: '#c0392b', bg: '#fdf0ed',
@@ -636,45 +1853,75 @@ const Ch03Page = () => {
   return (
     <section style={{ background: '#FAF8F3', minHeight: '100vh' }}>
       <div className="ra-chapter-bg"
-           style={{ background: 'linear-gradient(135deg,#FAF8F3 0%,#EEE8DC 100%)', padding: '6rem 3rem 4rem' }}>
+           style={{ background: 'linear-gradient(135deg,#FAF8F3 0%,#EEE8DC 100%)',
+                     padding: '6rem 3rem 4rem', position: 'relative' }}>
+        <HeroDecoCh03 />
         <div style={{ maxWidth: 800, margin: '0 auto', position: 'relative', zIndex: 1 }}>
-          <p style={{ color: '#C9A227', fontSize: '0.7rem', letterSpacing: '0.4em', marginBottom: '1.2rem' }}>CHAPTER 03</p>
+          <p style={{ color: '#C9A227', fontSize: '0.7rem', letterSpacing: '0.4em', marginBottom: '1.2rem' }}>CHAPTER 03 / 04</p>
           <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 'clamp(2rem,4vw,3.2rem)',
                         color: '#2D2416', fontWeight: 400, marginBottom: '1rem', lineHeight: 1.3 }}>AI 世界观</h2>
           <p style={{ fontSize: '1.2rem', color: '#8B6914', letterSpacing: '0.05em',
                        marginBottom: '2rem', fontStyle: 'italic' }}>"刷短视频你是矿，用 AI 你是矿工"</p>
           <div style={{ background: '#2D2416', padding: '2rem 2.5rem', maxWidth: 600, borderLeft: '3px solid #C9A227' }}>
-            <p style={{ color: '#FAF8F3', fontSize: '1rem', lineHeight: 2 }}>
-              短视频平台上，你的注意力是原材料，被算法挖掘、打包、卖给广告主。<br />
-              <span style={{ color: '#C9A227' }}>你是矿。</span><br /><br />
-              但如果你用 AI 来挖掘信息、提炼认知、封装工作流——<br />
-              <span style={{ color: '#C9A227' }}>你是矿工。</span>
-            </p>
+            <InkReveal
+              as="div"
+              style={{ color: '#FAF8F3', fontSize: '1rem', lineHeight: 2 }}
+              lineStyle={{ marginBottom: '0.2rem' }}
+              delay={300}
+              lines={[
+                '短视频平台上，',
+                '你的注意力是原材料，被算法挖掘、打包、卖给广告主。',
+                <span style={{ color: '#C9A227', fontSize: '1.4rem',
+                                fontFamily: "'Playfair Display',serif",
+                                fontStyle: 'italic' }} key="a">你是矿。</span>,
+                <span key="sp" style={{ display:'block', height:'0.8rem' }} />,
+                '但如果你用 AI 来挖掘信息、提炼认知、封装工作流——',
+                <span style={{ color: '#C9A227', fontSize: '1.4rem',
+                                fontFamily: "'Playfair Display',serif",
+                                fontStyle: 'italic' }} key="b">你是矿工。</span>,
+              ]}
+            />
           </div>
         </div>
       </div>
 
       <div style={{ padding: '4rem 3rem', maxWidth: 900, margin: '0 auto' }}>
         <h3 style={{ fontSize: '1.1rem', color: '#2D2416', letterSpacing: '0.1em',
-                      fontWeight: 500, marginBottom: '0.5rem' }}>AI 回答的三种命运</h3>
+                      fontWeight: 500, marginBottom: '0.5rem', scrollMarginTop: '40px' }} id="ch03-fates">AI 回答的三种命运</h3>
         <p style={{ color: 'rgba(45,36,22,0.55)', fontSize: '0.85rem', marginBottom: '2rem' }}>你现在处于哪一种？</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1rem', marginBottom: '4rem' }}>
+        <div className="ra-fate-row" style={{ marginBottom: '4rem' }}>
           {fates.map((f, i) => (
-            <div key={i} onClick={() => setFate(fate === i ? null : i)}
-                 style={{ background: fate === i ? f.bg : '#fff',
-                           border: `1px solid ${fate === i ? f.color : 'rgba(45,36,22,0.1)'}`,
-                           padding: '1.5rem', cursor: 'pointer', transition: 'all 0.3s ease' }}>
-              <div style={{ width: 10, height: 10, borderRadius: '50%', background: f.color, marginBottom: '1rem' }} />
-              <h4 style={{ fontSize: '1.1rem', color: f.color, fontWeight: 500, marginBottom: '0.8rem' }}>{f.label}</h4>
-              {fate === i
-                ? <p style={{ color: 'rgba(45,36,22,0.7)', fontSize: '0.88rem', lineHeight: 1.9 }}>{f.desc}</p>
-                : <p style={{ color: 'rgba(45,36,22,0.4)', fontSize: '0.8rem' }}>点击展开</p>}
+            <div key={i} className="ra-fate"
+                 style={{ borderTop: `3px solid ${f.color}` }}>
+              <div className="ra-fate-num">{String(i+1).padStart(2,'0')}</div>
+              <div>
+                <div style={{ width: 10, height: 10, borderRadius: '50%',
+                               background: f.color, marginBottom: '1.2rem',
+                               boxShadow: `0 0 10px ${f.color}` }} />
+                <h4 style={{ fontSize: '1.4rem', color: f.color, fontWeight: 500,
+                              marginBottom: '0.6rem', letterSpacing: '0.05em' }}>
+                  {f.label}
+                </h4>
+                <div className="ra-fate-hint">悬停展开</div>
+                <div className="ra-fate-desc">
+                  <p style={{ color: 'rgba(45,36,22,0.75)', fontSize: '0.9rem',
+                               lineHeight: 1.9, marginTop: '1rem' }}>
+                    {f.desc}
+                  </p>
+                </div>
+              </div>
+              <div style={{ marginTop: 'auto', paddingTop: '1.5rem',
+                             borderTop: `1px dashed ${f.color}33`,
+                             color: f.color, fontSize: '0.7rem',
+                             letterSpacing: '0.2em', opacity: 0.8 }}>
+                FATE / {String(i+1).padStart(2,'0')}
+              </div>
             </div>
           ))}
         </div>
 
         <h3 style={{ fontSize: '1.1rem', color: '#2D2416', letterSpacing: '0.1em',
-                      fontWeight: 500, marginBottom: '0.5rem' }}>AI 时代三种核心能力</h3>
+                      fontWeight: 500, marginBottom: '0.5rem', scrollMarginTop: '40px' }} id="ch03-abilities">AI 时代三种核心能力</h3>
         <p style={{ color: 'rgba(45,36,22,0.55)', fontSize: '0.85rem', marginBottom: '2rem' }}>这三种能力，AI 无法替代你</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {abilities.map((a, i) => (
@@ -695,30 +1942,79 @@ const Ch03Page = () => {
             </div>
           ))}
         </div>
+
+        <div className="ra-bigquote">
+          <p className="ra-bigquote-text">
+            AI 给你的不是<strong>最终成品</strong>，<br />
+            而是可以被你<strong>加工的材料</strong>。
+          </p>
+          <p style={{ color: 'rgba(45,36,22,0.5)', fontSize: '0.8rem',
+                       letterSpacing: '0.2em', marginTop: '1.5rem',
+                       fontStyle: 'italic' }}>
+            — 元提问决定能挖到什么 · 品位决定能留下什么 · 封装决定它能不能变成资产
+          </p>
+        </div>
+
+        <ActionCard
+          id="ch03"
+          title="打开 AI 前的三问"
+          prompts={[
+            '下一次打开 AI 之前，先在这里挑或写下三件事：',
+            '我带着什么原问题进去 · 我准备判断什么值得留下 · 这次要封装成什么。',
+          ]}
+          chipsLabel="选一类你最常用 AI 做的事（可多选）"
+          chips={[
+            '打穿一个观点',
+            '梳理一篇长文',
+            '拆一个产品方案',
+            '写一份提案',
+            '理一段关系',
+            '复盘一次失败',
+            '搭一个学习路径',
+            '研究一个领域',
+            '做一次决策推演',
+            '写一段代码',
+          ]}
+          placeholder="或者写下：我下次想带进 AI 的具体原问题是……"
+        />
+
+        <ChapterNav current="ch03" onNav={onNav} />
       </div>
     </section>
   );
 };
 
 // ── Chapter 04 ───────────────────────────────────────────────────────────────
-const Ch04Page = () => {
+const Ch04Page = ({ onNav }) => {
   const [activeStep, setActiveStep] = useState(0);
   const workflow = [
     { step: '01', title: '元提问', color: '#C9A227',
-      desc: '不要直接问"帮我做X"。先想：我真正需要解决的问题是什么？这个问题的本质是什么？从这里出发，提出一个精准的元问题。',
-      example: '❌ "帮我写一篇关于坚持的文章"\n✅ "我想让读者理解为什么大多数人的坚持会在21天后失败，核心原因是什么？请帮我梳理论点结构"' },
+      desc: '不要急着问"帮我写一篇文章"。先找到那个最值得被打穿的原问题——它来自一句真正打动你的话，或者你早就知道但一直没真正做到的道理。',
+      example: '❌ "帮我总结这场直播"\n✅ "一个道理到底怎样才会真正变成你的人生？"\n\n元提问决定了这一次对话的深度。从哪里下铲，决定能挖到什么。' },
     { step: '02', title: '六轮追问', color: '#B8860B',
-      desc: '第一个答案永远不够好。每次AI回答后，从不同角度追问6次：反例是什么？更极端的情况呢？换个视角呢？有什么遗漏？',
-      example: '第1轮：初始问题\n第2轮：追问核心论点的证据\n第3轮：请举反例\n第4轮：换一个完全不同的框架\n第5轮：最重要的1个观点是什么\n第6轮：如果你是读者，最想看到什么' },
+      desc: '一轮回答只是表面铺开。围绕同一个原问题追问 3-5 轮甚至更多，从不同方向重复理解同一个观点。',
+      example: '第 1 轮：你怎么看这句话？           → 先拿到基础理解\n第 2 轮：说得更深一点、本质一点      → 往底层挖\n第 3 轮：高手会怎么看？               → 提高视角\n第 4 轮：反面观点是什么？             → 避免单向理解\n第 5 轮：有没有极端案例？             → 把问题推到边界\n第 6 轮：怎么变成行动、文章或产品？   → 落到输出与执行' },
     { step: '03', title: '工具分工', color: '#8B6914',
-      desc: '不同AI工具有不同的强项。要知道什么时候用什么工具——盲目用一个工具是在浪费。',
-      example: 'GPT-4o  → 结构师：逻辑框架、提纲拆解、信息整合\nGemini  → 金句机：语言锤炼、表达打磨、文风调整\nClaude  → 文章导师：长文修改、论点深化、风格一致性' },
-    { step: '04', title: '筛选重写', color: '#6B4F12',
-      desc: 'AI输出的内容，70%以上需要被淘汰。你的品位在这一步发挥作用：哪些值得保留？哪些需要重写？哪些方向要放弃？',
-      example: '筛选标准：\n□ 这个观点是真的吗？\n□ 这个表达是我的风格吗？\n□ 读者会因此受益还是反感？\n□ 有没有更准确的说法？' },
-    { step: '05', title: '封装入库', color: '#4A3A0A',
-      desc: '完成一次AI协作后，不要就此结束。把有价值的内容提炼成：可复用的Prompt模板、认知原则、工作流SOP——存入你的知识库。',
-      example: '封装对象：\n→ 有效的Prompt结构（下次直接用）\n→ 值得重复的认知框架\n→ 某类任务的最优工作流\n→ 自己写的最好的表达（积累风格）' },
+      desc: '不同 AI 进入不同工序。但工具可以分工，主编只能是你——AI 不能替你决定什么最重要、什么该删、什么值得放大。',
+      example: 'GPT     → 结构师：拆逻辑、搭框架、找层次\nGemini  → 金句机：提亮点、找锋利表达、压传播句\nClaude  → 文章导师：看语感、顺不顺、像不像人写' },
+    { step: '04', title: '筛选', color: '#6B4F12',
+      desc: '不要把 AI 所有回答都当成宝。AI 给的内容里有些只是看起来正确，有些只是结构完整，有些只是语言顺滑。要先筛一遍。',
+      example: '哪一句最打中？\n哪一段最有结构？\n哪个例子能保留？\n哪个判断有传播力？\n哪些只是"正确废话"？' },
+    { step: '05', title: '重写', color: '#5a4020',
+      desc: '不要复制粘贴。用自己的话重新打一遍——这一步不是为了换表达，而是为了逼自己真正理解。AI 写出来很顺，换成自己的话就会卡住，那个卡住正是你还没消化的地方。',
+      example: '问自己四个问题：\n· 这是我会说的话吗？\n· 这句话我真的理解了吗？\n· 这个表达贴不贴我的语气？\n· 这里有没有我的经验、判断和取舍？' },
+    { step: '06', title: '封装', color: '#4A3A0A',
+      desc: '把重写过的碎片变成一个可被理解、被复用、被传播的东西。封装做得好不好，决定了这次 AI 对话会不会归零。',
+      example: '一段对话    → 一篇文章\n几个判断    → 一张清单\n一个流程    → 工具页\n一套方法    → 提示词模板\n一批材料    → 课程 / 报告 / 产品' },
+    { step: '07', title: '输出', color: '#3a2e0e',
+      desc: '把它带到真实世界里。如果内容永远停在 AI 对话框或自己的文档里，会给人"我已经想明白了"的错觉——但这还不是完整反馈。',
+      example: '发出去 · 给一个真实的人看 · 发布到平台\n\n"发布不是为了证明自己，而是为了校准判断。"' },
+    { step: '08', title: '反馈', color: '#2D2416',
+      desc: '真实读者会不会停下来、看完、收藏、追问，只能在真实世界里发生。没有人点开，本身也是反馈——它不一定好受，但很真实。',
+      example: '检验四件事：\n· 别人能不能看懂？\n· 它有没有真的打中问题？\n· 它能不能引出行动？\n· 它能不能积累信任？' },
+    { step: '09', title: '下一轮迭代', color: '#1a1208',
+      desc: '把反馈带回来，变成下一轮提问的起点。读者反复问的同一个问题，不是麻烦，是在提醒——下一个元提问就藏在这里。',
+      example: '数据低 → 标题和开头没打开\n收藏高 → 这里有工具价值\n反复追问同一处 → 下一个元提问的种子\n\n→ 回到第 01 步：新的元提问' },
   ];
   const tools = [
     { name: 'GPT-4o', role: '结构师', color: '#10a37f',
@@ -732,9 +2028,11 @@ const Ch04Page = () => {
   return (
     <section style={{ background: '#F5F2EB', minHeight: '100vh' }}>
       <div className="ra-chapter-bg"
-           style={{ background: 'linear-gradient(135deg,#F5F2EB 0%,#EDE5D0 100%)', padding: '6rem 3rem 4rem' }}>
+           style={{ background: 'linear-gradient(135deg,#F5F2EB 0%,#EDE5D0 100%)',
+                     padding: '6rem 3rem 4rem', position: 'relative' }}>
+        <HeroDecoCh04 />
         <div style={{ maxWidth: 800, margin: '0 auto', position: 'relative', zIndex: 1 }}>
-          <p style={{ color: '#C9A227', fontSize: '0.7rem', letterSpacing: '0.4em', marginBottom: '1.2rem' }}>CHAPTER 04</p>
+          <p style={{ color: '#C9A227', fontSize: '0.7rem', letterSpacing: '0.4em', marginBottom: '1.2rem' }}>CHAPTER 04 / 04</p>
           <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 'clamp(2rem,4vw,3.2rem)',
                         color: '#2D2416', fontWeight: 400, marginBottom: '1rem', lineHeight: 1.3 }}>AI 使用方法</h2>
           <p style={{ fontSize: '1.2rem', color: '#8B6914', letterSpacing: '0.05em',
@@ -744,47 +2042,52 @@ const Ch04Page = () => {
 
       <div style={{ padding: '4rem 3rem', maxWidth: 900, margin: '0 auto' }}>
         <h3 style={{ fontSize: '1.1rem', color: '#2D2416', letterSpacing: '0.1em',
-                      fontWeight: 500, marginBottom: '0.5rem' }}>完整工作流：五步闭环</h3>
-        <p style={{ color: 'rgba(45,36,22,0.55)', fontSize: '0.85rem', marginBottom: '2rem' }}>点击每一步展开详解与示例</p>
+                      fontWeight: 500, marginBottom: '0.5rem', scrollMarginTop: '40px' }} id="ch04-workflow">完整工作流：九步闭环</h3>
+        <p style={{ color: 'rgba(45,36,22,0.55)', fontSize: '0.85rem', marginBottom: '2rem' }}>
+          元提问 → 多轮追问 → 工具分工 → 筛选 → 重写 → 封装 → 输出 → 反馈 → 下一轮迭代 · 点击每一步展开
+        </p>
 
-        <div style={{ marginBottom: '4rem' }}>
+        <div className="ra-workflow" style={{ marginBottom: '4rem' }}>
           {workflow.map((w, i) => (
-            <div key={i}>
-              <div className="ra-flow-step"
-                   onClick={() => setActiveStep(activeStep === i ? -1 : i)}
-                   style={{ borderLeft: `3px solid ${activeStep === i ? w.color : 'transparent'}`,
-                             background: activeStep === i ? 'rgba(201,162,39,0.03)' : '#fff' }}>
-                <span style={{ color: w.color, fontSize: '0.75rem', letterSpacing: '0.2em',
-                                 fontWeight: 600, width: 30, flexShrink: 0 }}>{w.step}</span>
-                <span style={{ flex: 1, fontSize: '1rem', color: '#2D2416', fontWeight: 500 }}>{w.title}</span>
-                {activeStep === i
-                  ? <ChevronUp size={14} style={{ color: '#C9A227' }} />
-                  : <ChevronDown size={14} style={{ color: 'rgba(45,36,22,0.3)' }} />}
-              </div>
-              {activeStep === i && (
-                <div style={{ background: 'rgba(201,162,39,0.03)',
-                               border: '1px solid rgba(201,162,39,0.15)', borderTop: 'none',
-                               padding: '1.5rem 2rem', marginBottom: '0.6rem' }}>
-                  <p style={{ color: 'rgba(45,36,22,0.7)', fontSize: '0.9rem',
-                               lineHeight: 1.9, marginBottom: '1.2rem' }}>{w.desc}</p>
-                  <div style={{ background: '#2D2416', padding: '1rem 1.4rem', borderLeft: '3px solid #C9A227' }}>
-                    <p style={{ color: '#C9A227', fontSize: '0.7rem', marginBottom: '0.4rem' }}>示例</p>
-                    <pre style={{ color: 'rgba(250,248,243,0.8)', fontSize: '0.82rem',
-                                    lineHeight: 1.8, fontFamily: 'inherit', whiteSpace: 'pre-wrap', margin: 0 }}>
-                      {w.example}
-                    </pre>
-                  </div>
+            <div key={i} className={`ra-workflow-row ${activeStep === i ? 'active' : ''}`}>
+              <div className="ra-workflow-dot">{w.step}</div>
+              <div style={{ flex: 1 }}>
+                <div onClick={() => setActiveStep(activeStep === i ? -1 : i)}
+                     style={{ display: 'flex', alignItems: 'center', gap: '1rem',
+                                background: activeStep === i ? '#fff' : '#fff',
+                                border: `1px solid ${activeStep === i ? w.color : 'rgba(45,36,22,0.1)'}`,
+                                padding: '1rem 1.4rem', cursor: 'pointer',
+                                transition: 'all 0.3s ease' }}>
+                  <span style={{ flex: 1, fontSize: '1.05rem', color: '#2D2416', fontWeight: 500 }}>
+                    {w.title}
+                  </span>
+                  {activeStep === i
+                    ? <ChevronUp size={14} style={{ color: '#C9A227' }} />
+                    : <ChevronDown size={14} style={{ color: 'rgba(45,36,22,0.3)' }} />}
                 </div>
-              )}
-              {i < workflow.length - 1 && activeStep !== i && (
-                <div className="ra-flow-arrow"><ChevronDown size={14} /></div>
-              )}
+                {activeStep === i && (
+                  <div style={{ background: 'rgba(201,162,39,0.03)',
+                                 border: '1px solid rgba(201,162,39,0.15)', borderTop: 'none',
+                                 padding: '1.5rem 1.8rem' }}>
+                    <p style={{ color: 'rgba(45,36,22,0.7)', fontSize: '0.9rem',
+                                 lineHeight: 1.9, marginBottom: '1.2rem' }}>{w.desc}</p>
+                    <div style={{ background: '#2D2416', padding: '1rem 1.4rem', borderLeft: `3px solid ${w.color}` }}>
+                      <p style={{ color: w.color, fontSize: '0.7rem', marginBottom: '0.4rem',
+                                   letterSpacing: '0.2em' }}>EXAMPLE / 示例</p>
+                      <pre style={{ color: 'rgba(250,248,243,0.85)', fontSize: '0.82rem',
+                                      lineHeight: 1.8, fontFamily: 'inherit', whiteSpace: 'pre-wrap', margin: 0 }}>
+                        {w.example}
+                      </pre>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
 
         <h3 style={{ fontSize: '1.1rem', color: '#2D2416', letterSpacing: '0.1em',
-                      fontWeight: 500, marginBottom: '0.5rem' }}>工具分工表</h3>
+                      fontWeight: 500, marginBottom: '0.5rem', scrollMarginTop: '40px' }} id="ch04-tools">工具分工表</h3>
         <p style={{ color: 'rgba(45,36,22,0.55)', fontSize: '0.85rem', marginBottom: '2rem' }}>盲目使用一个工具是在浪费它们的个性</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1.2rem', marginBottom: '3rem' }}>
           {tools.map((t, i) => (
@@ -803,71 +2106,253 @@ const Ch04Page = () => {
           ))}
         </div>
 
-        <div className="ra-quote">
-          方法论的本质，也是重复。<br />
-          把这套闭环重复到你不需要思考就能自动执行，<br />
-          AI 就真正变成了你的一部分。
+        <div className="ra-bigquote">
+          <p className="ra-bigquote-text">
+            AI 可以帮你<strong>挖深问题</strong>，<br />
+            但<strong>真实世界</strong>才会训练你的判断。
+          </p>
+          <p style={{ color: 'rgba(45,36,22,0.5)', fontSize: '0.8rem',
+                       letterSpacing: '0.2em', marginTop: '1.5rem',
+                       fontStyle: 'italic' }}>
+            — AI 不能替你完成摩擦
+          </p>
         </div>
+
+        <ActionCard
+          id="ch04"
+          title="今天的最低成本版本"
+          prompts={[
+            '不用一开始就跑完整流程。今天只承诺最小版本——',
+            '挑一个你愿意今天就发出去的最小输出。',
+          ]}
+          chipsLabel="今天的最小输出（可多选）"
+          chips={[
+            '写一段 100 字',
+            '发一条朋友圈',
+            '发一篇小红书',
+            '发给一个朋友看',
+            '语音给自己讲一遍',
+            '写进自己的笔记',
+            '做一张截图卡片',
+            '回一个评论',
+            '改一段过去的稿子',
+          ]}
+          placeholder="或者写下：今天我打算这样跑一遍最小闭环……"
+        />
+
+        <ChapterNav current="ch04" onNav={onNav} />
       </div>
     </section>
   );
 };
 
 // ── Outro ─────────────────────────────────────────────────────────────────────
-const OutroPage = () => {
+const OutroPage = ({ onNav }) => {
   const principles = [
-    '你不缺道理，你缺把道理重复到身体里的系统',
-    '重复不是机械循环，是螺旋上升',
-    '原则是你的宪法，不是你的口号',
-    '不归零，从现在的位置站起来',
-    '刷短视频你是矿，用AI你是矿工',
-    '元提问 → 六轮追问 → 工具分工 → 筛选重写 → 封装入库',
-    '封装，是让能力不归零的唯一方式',
+    '听过不等于拥有，认同也不等于做到',
+    '知道和做到之间，不是知识的缝隙，而是意志的缝隙',
+    '人生不是由你临时想做什么决定的，而是由你的默认设置决定的',
+    '一个人重复什么，就会默认什么；默认什么，就会活成什么',
+    '普通人的重复是画圈，高手的重复是螺旋',
+    '原则就是你的宪法 · 复利的前提，是不要反复清零',
+    '刷短视频，你是矿；用 AI，你是矿工',
+    'AI 给你的不是最终成品，而是可以被你加工的材料',
+    'AI 可以帮你挖深问题，但真实世界才会训练你的判断',
   ];
+
+  // Read user's action card responses from localStorage
+  const [traces, setTraces] = useState([]);
+  useEffect(() => {
+    const found = [];
+    ['ch01','ch02','ch03','ch04'].forEach(id => {
+      try {
+        const raw = localStorage.getItem(`ra-action-${id}`);
+        if (raw) {
+          const data = JSON.parse(raw);
+          if (data.value && data.value.trim()) {
+            found.push({ id, ...data });
+          }
+        }
+      } catch (e) {}
+    });
+    setTraces(found);
+  }, []);
+
+  const chapterTitleMap = {
+    ch01: 'Ch01 · 你写下的那句话',
+    ch02: 'Ch02 · 你的重复训练',
+    ch03: 'Ch03 · 打开 AI 前的三问',
+    ch04: 'Ch04 · 今天的最低成本版本',
+  };
   return (
     <section style={{ minHeight: '100vh', background: '#140E06', color: '#FAF8F3',
-                       display: 'flex', flexDirection: 'column', justifyContent: 'center',
-                       alignItems: 'center', textAlign: 'center', position: 'relative',
-                       overflow: 'hidden', padding: '6rem 3rem' }}>
+                       position: 'relative', overflow: 'hidden' }}>
+      {/* Big atmospheric glow */}
       <div style={{ position: 'absolute', inset: 0,
-                     background: 'radial-gradient(ellipse at center,rgba(201,162,39,0.08) 0%,transparent 60%)' }} />
-      <div style={{ maxWidth: 700, position: 'relative', zIndex: 1, width: '100%' }}>
-        <p style={{ color: 'rgba(201,162,39,0.5)', fontSize: '0.7rem', letterSpacing: '0.5em', marginBottom: '2rem' }}>
-          FINALE
-        </p>
-        <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 'clamp(2rem,5vw,3.5rem)',
-                      color: '#FAF8F3', fontWeight: 400, marginBottom: '1rem', lineHeight: 1.3 }}>
-          把它重复到身体里
-        </h2>
-        <p style={{ color: 'rgba(201,162,39,0.7)', fontSize: '1rem', letterSpacing: '0.1em',
-                     marginBottom: '4rem', fontStyle: 'italic' }}>直到它成为你的气质</p>
+                     background: 'radial-gradient(ellipse at 50% 30%,rgba(201,162,39,0.12) 0%,transparent 50%)',
+                     pointerEvents: 'none' }} />
+      {/* Decorative giant character */}
+      <div style={{ position: 'absolute', right: '-3rem', bottom: '-5rem',
+                     fontFamily: "'Playfair Display',serif",
+                     fontSize: 'clamp(20rem,40vw,40rem)',
+                     color: 'rgba(201,162,39,0.04)', lineHeight: 1, fontWeight: 700,
+                     pointerEvents: 'none', userSelect: 'none' }}>
+        重
+      </div>
 
-        <div style={{ width: '100%', marginBottom: '4rem', textAlign: 'left' }}>
-          {principles.map((p, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '1.2rem',
-                                    padding: '1rem 0', borderBottom: '1px solid rgba(201,162,39,0.1)' }}>
-              <span style={{ color: '#C9A227', fontSize: '0.7rem', letterSpacing: '0.2em',
-                               marginTop: '0.15rem', flexShrink: 0 }}>{String(i+1).padStart(2,'0')}</span>
-              <p style={{ color: 'rgba(250,248,243,0.75)', fontSize: '0.95rem', lineHeight: 1.8 }}>{p}</p>
-            </div>
-          ))}
+      <div style={{ maxWidth: 800, margin: '0 auto', position: 'relative', zIndex: 1,
+                     padding: '8rem 3rem 6rem' }}>
+        {/* Hero */}
+        <div style={{ textAlign: 'center', marginBottom: '6rem' }}>
+          <p style={{ color: 'rgba(201,162,39,0.5)', fontSize: '0.7rem',
+                       letterSpacing: '0.5em', marginBottom: '2rem' }}>
+            — FINALE —
+          </p>
+          <h2 style={{ fontFamily: "'Playfair Display',serif",
+                        fontSize: 'clamp(2.5rem,7vw,5rem)', color: '#FAF8F3',
+                        fontWeight: 400, marginBottom: '1.5rem', lineHeight: 1.2 }}>
+            把它重复到身体里
+          </h2>
+          <p style={{ color: 'rgba(201,162,39,0.7)', fontSize: 'clamp(1rem,1.6vw,1.2rem)',
+                       letterSpacing: '0.15em', fontStyle: 'italic' }}>
+            直到它成为你的气质
+          </p>
         </div>
 
-        <div style={{ padding: '2.5rem', border: '1px solid rgba(201,162,39,0.3)',
-                       textAlign: 'center', marginBottom: '3rem' }}>
-          <p style={{ color: 'rgba(250,248,243,0.4)', fontSize: '0.75rem',
-                       letterSpacing: '0.3em', marginBottom: '1rem' }}>CORE SENTENCE</p>
-          <p style={{ color: '#FAF8F3', fontSize: 'clamp(1rem,2vw,1.3rem)', lineHeight: 2, letterSpacing: '0.05em' }}>
+        {/* Core sentence — MASSIVE typography */}
+        <div style={{ borderTop: '1px solid rgba(201,162,39,0.2)',
+                       borderBottom: '1px solid rgba(201,162,39,0.2)',
+                       padding: '5rem 0', marginBottom: '6rem', textAlign: 'center' }}>
+          <p style={{ color: 'rgba(250,248,243,0.4)', fontSize: '0.7rem',
+                       letterSpacing: '0.4em', marginBottom: '2.5rem' }}>
+            THE CORE SENTENCE
+          </p>
+          <p style={{ fontFamily: "'Playfair Display','Noto Serif SC',serif",
+                       color: '#FAF8F3', fontSize: 'clamp(1.6rem,4vw,3rem)',
+                       lineHeight: 1.6, fontWeight: 400, marginBottom: '0.5rem' }}>
             把一个道理重复到身体里，
           </p>
-          <p style={{ color: '#C9A227', fontSize: 'clamp(1rem,2vw,1.3rem)', lineHeight: 2, letterSpacing: '0.05em' }}>
+          <p style={{ fontFamily: "'Playfair Display','Noto Serif SC',serif",
+                       color: '#C9A227', fontSize: 'clamp(1.6rem,4vw,3rem)',
+                       lineHeight: 1.6, fontWeight: 400, fontStyle: 'italic' }}>
             它才会变成你的人生。
           </p>
         </div>
 
-        <p style={{ color: 'rgba(250,248,243,0.2)', fontSize: '0.7rem', letterSpacing: '0.3em' }}>
-          REPEAT · AI · ENCAPSULATE · NO RESET
-        </p>
+        {/* Principles list */}
+        <div style={{ marginBottom: '5rem' }}>
+          <p style={{ color: 'rgba(201,162,39,0.5)', fontSize: '0.7rem',
+                       letterSpacing: '0.4em', marginBottom: '2rem', textAlign: 'center' }}>
+            NINE PRINCIPLES TO REPEAT
+          </p>
+          {principles.map((p, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '1.5rem',
+                                    padding: '1.2rem 0', borderBottom: '1px solid rgba(201,162,39,0.08)' }}>
+              <span style={{ color: '#C9A227', fontSize: '0.7rem', letterSpacing: '0.2em',
+                               marginTop: '0.3rem', flexShrink: 0,
+                               fontFamily: "'Playfair Display',serif", fontWeight: 600 }}>
+                {String(i+1).padStart(2,'0')}
+              </span>
+              <p style={{ color: 'rgba(250,248,243,0.78)', fontSize: '1rem',
+                           lineHeight: 1.9, flex: 1 }}>{p}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Your traces — what you wrote in the action cards */}
+        <div style={{ marginBottom: '5rem', padding: '3rem 2rem',
+                       border: '1px solid rgba(201,162,39,0.2)',
+                       background: 'rgba(201,162,39,0.03)' }}>
+          <p style={{ color: 'rgba(201,162,39,0.6)', fontSize: '0.7rem',
+                       letterSpacing: '0.4em', marginBottom: '0.5rem', textAlign: 'center' }}>
+            YOUR TRACES
+          </p>
+          <h3 style={{ fontFamily: "'Playfair Display','Noto Serif SC',serif",
+                        fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', textAlign: 'center',
+                        color: '#FAF8F3', fontWeight: 400, marginBottom: '0.5rem' }}>
+            你在这本手册里留下的痕迹
+          </h3>
+          <p style={{ textAlign: 'center', color: 'rgba(250,248,243,0.5)',
+                       fontSize: '0.85rem', marginBottom: '2.5rem',
+                       fontStyle: 'italic' }}>
+            一段关系过去了、一个项目失败了、一次对话结束了——<br />
+            真正可惜的，不是事情结束，而是结束以后什么都没有留下。
+          </p>
+
+          {traces.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+              <p style={{ color: 'rgba(250,248,243,0.4)', fontSize: '0.9rem',
+                           lineHeight: 1.9, marginBottom: '1.5rem' }}>
+                你还没有在任何一张行动卡上写下东西。<br />
+                这本手册的真正价值，发生在你动手写下来的瞬间。
+              </p>
+              <button onClick={() => onNav('ch01')}
+                      style={{ background: 'transparent', border: '1px solid rgba(201,162,39,0.5)',
+                                color: '#C9A227', padding: '0.7rem 2rem', cursor: 'pointer',
+                                fontFamily: 'inherit', fontSize: '0.85rem', letterSpacing: '0.2em' }}>
+                回到 Ch01 写下第一句
+              </button>
+            </div>
+          ) : (
+            <>
+              {traces.map(t => (
+                <div key={t.id} style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem',
+                                            borderBottom: '1px dashed rgba(201,162,39,0.15)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between',
+                                 alignItems: 'baseline', marginBottom: '0.6rem' }}>
+                    <span style={{ color: '#C9A227', fontSize: '0.75rem',
+                                     letterSpacing: '0.15em' }}>
+                      {chapterTitleMap[t.id]}
+                    </span>
+                    <span style={{ color: 'rgba(250,248,243,0.3)', fontSize: '0.65rem' }}>
+                      {t.savedAt}
+                    </span>
+                  </div>
+                  <p style={{ color: 'rgba(250,248,243,0.85)', fontSize: '0.95rem',
+                               lineHeight: 1.9, whiteSpace: 'pre-wrap',
+                               fontFamily: "'Noto Serif SC',serif" }}>
+                    {t.value}
+                  </p>
+                </div>
+              ))}
+              <p style={{ textAlign: 'center', color: 'rgba(201,162,39,0.5)',
+                           fontSize: '0.75rem', letterSpacing: '0.2em',
+                           marginTop: '2rem', fontStyle: 'italic' }}>
+                — 这些是你的不归零 —
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* Restart button — 重复 themed */}
+        <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+          <button onClick={() => onNav('directory')}
+                  className="ra-btn"
+                  style={{ background: 'transparent', border: '1px solid rgba(201,162,39,0.5)',
+                            color: '#C9A227', padding: '1rem 3rem',
+                            fontFamily: "'Noto Serif SC',serif",
+                            fontSize: '0.95rem', letterSpacing: '0.25em', cursor: 'pointer' }}>
+            <RotateCcw size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.6rem' }} />
+            再读一遍
+          </button>
+          <p style={{ color: 'rgba(250,248,243,0.3)', fontSize: '0.75rem',
+                       letterSpacing: '0.15em', marginTop: '1.5rem', fontStyle: 'italic' }}>
+            重复，是螺旋上升 · 第二次读会有第一次没看见的东西
+          </p>
+        </div>
+
+        {/* Signature */}
+        <div style={{ textAlign: 'center', paddingTop: '3rem',
+                       borderTop: '1px solid rgba(201,162,39,0.1)' }}>
+          <p style={{ color: 'rgba(250,248,243,0.25)', fontSize: '0.7rem',
+                       letterSpacing: '0.3em', marginBottom: '0.5rem' }}>
+            REPEAT · AI · ENCAPSULATE · NO RESET
+          </p>
+          <p style={{ color: 'rgba(250,248,243,0.2)', fontSize: '0.65rem',
+                       letterSpacing: '0.2em' }}>
+            封装手册 · Vol.001 · MMXXVI
+          </p>
+        </div>
       </div>
     </section>
   );
@@ -876,23 +2361,79 @@ const OutroPage = () => {
 // ── App (root) ────────────────────────────────────────────────────────────────
 export default function App() {
   const [entered, setEntered] = useState(false);
-  const [activePage, setActivePage] = useState('directory');
+  const [activePage, setActivePage] = useState('preface');
+  const [scrollPct, setScrollPct] = useState(0);
+  const [navKey, setNavKey] = useState(0);   // increments on each nav, triggers entrance animation
   const mainRef = useRef(null);
 
   const handleNav = (id) => {
     setActivePage(id);
+    setNavKey(k => k + 1);
     mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Anchors per chapter
+  const anchorsByPage = {
+    ch01: [
+      { id: 'ch01-stages',     label: '五个阶段' },
+      { id: 'ch01-experience', label: '常见体验' },
+    ],
+    ch02: [
+      { id: 'ch02-methods', label: '四种方式' },
+    ],
+    ch03: [
+      { id: 'ch03-fates',     label: '三种命运' },
+      { id: 'ch03-abilities', label: '三种能力' },
+    ],
+    ch04: [
+      { id: 'ch04-workflow', label: '五步闭环' },
+      { id: 'ch04-tools',    label: '工具分工' },
+    ],
+  };
+  const currentAnchors = anchorsByPage[activePage];
+
+  // Track scroll progress within current page
+  useEffect(() => {
+    const el = mainRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const max = el.scrollHeight - el.clientHeight;
+      setScrollPct(max > 0 ? (el.scrollTop / max) * 100 : 0);
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [entered, activePage]);
+
+  // Keyboard navigation: ← → to switch chapters, Esc to top
+  useEffect(() => {
+    if (!entered) return;
+    const onKey = (e) => {
+      // Skip if user is typing in an input/textarea
+      if (['INPUT','TEXTAREA'].includes(e.target.tagName)) return;
+      const idx = PAGE_ORDER.indexOf(activePage);
+      if (e.key === 'ArrowRight' && idx < PAGE_ORDER.length - 1) {
+        handleNav(PAGE_ORDER[idx + 1]);
+      } else if (e.key === 'ArrowLeft' && idx > 0) {
+        handleNav(PAGE_ORDER[idx - 1]);
+      } else if (e.key === 'Escape') {
+        mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [entered, activePage]);
+
   const renderPage = () => {
     switch (activePage) {
+      case 'preface':   return <PrefacePage onNav={handleNav} />;
       case 'directory': return <DirectoryPage onNav={handleNav} />;
-      case 'ch01':      return <Ch01Page />;
-      case 'ch02':      return <Ch02Page />;
-      case 'ch03':      return <Ch03Page />;
-      case 'ch04':      return <Ch04Page />;
-      case 'outro':     return <OutroPage />;
-      default:          return <DirectoryPage onNav={handleNav} />;
+      case 'ch01':      return <Ch01Page onNav={handleNav} />;
+      case 'ch02':      return <Ch02Page onNav={handleNav} />;
+      case 'ch03':      return <Ch03Page onNav={handleNav} />;
+      case 'ch04':      return <Ch04Page onNav={handleNav} />;
+      case 'outro':     return <OutroPage onNav={handleNav} />;
+      default:          return <PrefacePage onNav={handleNav} />;
     }
   };
 
@@ -906,9 +2447,24 @@ export default function App() {
       ) : (
         <div className="ra-app">
           <Sidebar active={activePage} onNav={handleNav} />
+          {/* Scroll progress bar */}
+          <div className="ra-progress">
+            <div className="ra-progress-fill" style={{ width: `${scrollPct}%` }} />
+          </div>
           <main ref={mainRef} className="ra-main">
-            {renderPage()}
+            {/* key triggers fade-in on chapter switch */}
+            <div key={activePage} className="ra-page">
+              {renderPage()}
+            </div>
           </main>
+          {/* Floating UI overlays */}
+          <MouseGlow />
+          {currentAnchors && (
+            <AnchorNav scrollEl={mainRef} items={currentAnchors} key={`anchor-${activePage}`} />
+          )}
+          <BackToTop scrollEl={mainRef} />
+          {/* Full-screen ceremony overlay on chapter change */}
+          <ChapterEntrance pageId={activePage} navKey={navKey} />
         </div>
       )}
     </>
