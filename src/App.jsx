@@ -17,6 +17,325 @@ const GlobalStyles = () => (
     html, body, #root { height: 100%; overflow: hidden; }
     body { font-family: 'Noto Serif SC', serif; }
 
+    /* ══ WILLPOWER TEST (3-second hold) ══════════════════════════════════════ */
+    .ra-will {
+      position: fixed; inset: 0; background: #050302; color: #FAF8F3;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 600; user-select: none; -webkit-user-select: none;
+      overflow: hidden;
+    }
+    .ra-will::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse at center, rgba(201,162,39,0.08) 0%, transparent 60%);
+    }
+    .ra-will-out {
+      animation: ra-will-out 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+    @keyframes ra-will-out {
+      to { opacity: 0; filter: blur(8px); pointer-events: none; }
+    }
+    .ra-will-eyebrow {
+      color: rgba(201,162,39,0.45); font-size: 0.7rem;
+      letter-spacing: 0.55em; margin-bottom: 5rem;
+      text-align: center;
+    }
+    .ra-will-orb-wrap {
+      position: relative; width: 200px; height: 200px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+    .ra-will-ring {
+      position: absolute; inset: 0;
+      transform: rotate(-90deg); pointer-events: none;
+    }
+    .ra-will-ring circle {
+      fill: none; stroke-width: 2;
+      transition: stroke 0.3s ease;
+    }
+    .ra-will-ring .bg { stroke: rgba(201,162,39,0.15); }
+    .ra-will-ring .fg {
+      stroke: #C9A227; stroke-linecap: round;
+      filter: drop-shadow(0 0 10px rgba(201,162,39,0.6));
+      transition: stroke-dashoffset 60ms linear;
+    }
+    .ra-will-orb {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #C9A227;
+      box-shadow:
+        0 0 16px rgba(201,162,39,0.8),
+        0 0 40px rgba(201,162,39,0.4),
+        0 0 80px rgba(201,162,39,0.2);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  box-shadow 0.3s ease;
+      animation: ra-orb-pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes ra-orb-pulse {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.15); }
+    }
+    .ra-will-orb-wrap.holding .ra-will-orb {
+      transform: scale(2.2); animation: none;
+      box-shadow:
+        0 0 30px rgba(201,162,39,1),
+        0 0 70px rgba(201,162,39,0.6),
+        0 0 140px rgba(201,162,39,0.3);
+    }
+    .ra-will-orb-wrap.passed .ra-will-orb {
+      transform: scale(8); animation: none;
+      box-shadow: 0 0 200px rgba(201,162,39,0.8);
+    }
+    .ra-will-prompt {
+      margin-top: 5rem; min-height: 4.5rem; text-align: center;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .ra-will-prompt-main {
+      font-family: 'Playfair Display','Noto Serif SC',serif;
+      color: rgba(250,248,243,0.9); font-size: clamp(1.2rem, 2.2vw, 1.6rem);
+      letter-spacing: 0.15em; margin-bottom: 0.6rem;
+    }
+    .ra-will-prompt-sub {
+      color: rgba(201,162,39,0.6); font-size: 0.8rem;
+      letter-spacing: 0.25em;
+    }
+    .ra-will-prompt.failed .ra-will-prompt-main {
+      color: #C9A227; font-style: italic;
+    }
+    .ra-will-skip {
+      position: absolute; bottom: 2rem; right: 2rem;
+      color: rgba(201,162,39,0.3); font-size: 0.7rem;
+      letter-spacing: 0.2em; cursor: pointer;
+      transition: color 0.3s ease;
+      background: transparent; border: none;
+      font-family: inherit;
+    }
+    .ra-will-skip:hover { color: #C9A227; }
+    .ra-will-attempts {
+      position: absolute; bottom: 2rem; left: 2rem;
+      color: rgba(201,162,39,0.3); font-size: 0.7rem;
+      letter-spacing: 0.2em;
+    }
+
+    /* ══ STAGE SELF-PICK (Ch01) ═══════════════════════════════════════════════ */
+    .ra-stage-pick {
+      margin-top: 3rem; padding: 2rem;
+      border: 1px solid rgba(201,162,39,0.2);
+      background: linear-gradient(135deg, rgba(201,162,39,0.04), transparent);
+    }
+    .ra-stage-pick-q {
+      color: #2D2416; font-size: 1.05rem; font-weight: 500;
+      margin-bottom: 0.4rem; letter-spacing: 0.05em;
+    }
+    .ra-stage-pick-hint {
+      color: rgba(45,36,22,0.55); font-size: 0.85rem; margin-bottom: 1.5rem;
+    }
+    .ra-stage-buttons {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.6rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 700px) {
+      .ra-stage-buttons { grid-template-columns: repeat(2, 1fr); }
+    }
+    .ra-stage-btn {
+      padding: 0.9rem 0.6rem; background: #fff;
+      border: 1px solid rgba(45,36,22,0.15);
+      cursor: pointer; transition: all 0.3s ease;
+      font-family: inherit; text-align: center;
+    }
+    .ra-stage-btn-num {
+      display: block; font-family: 'Playfair Display', serif;
+      font-size: 0.75rem; color: #C9A227; letter-spacing: 0.2em;
+      margin-bottom: 0.3rem;
+    }
+    .ra-stage-btn-label {
+      display: block; color: #2D2416; font-size: 0.95rem; font-weight: 500;
+    }
+    .ra-stage-btn:hover {
+      border-color: #C9A227; transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(45,36,22,0.08);
+    }
+    .ra-stage-btn.selected {
+      background: #2D2416; border-color: #2D2416;
+    }
+    .ra-stage-btn.selected .ra-stage-btn-num,
+    .ra-stage-btn.selected .ra-stage-btn-label {
+      color: #C9A227;
+    }
+    .ra-stage-feedback {
+      padding: 1.5rem 1.8rem; background: #2D2416;
+      border-left: 3px solid #C9A227;
+      animation: ra-fade-up 0.5s ease;
+    }
+    @keyframes ra-fade-up {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .ra-stage-feedback-label {
+      color: #C9A227; font-size: 0.7rem; letter-spacing: 0.3em;
+      margin-bottom: 0.6rem;
+    }
+    .ra-stage-feedback-text {
+      color: #FAF8F3; font-size: 1rem; line-height: 1.9;
+    }
+
+    /* ══ COMPOUND VISUALIZER (Ch02) ══════════════════════════════════════════ */
+    .ra-compound {
+      margin-top: 3rem; padding: 2.2rem; background: #fff;
+      border: 1px solid rgba(45,36,22,0.1);
+    }
+    .ra-compound-title {
+      color: #2D2416; font-size: 1.1rem; font-weight: 500;
+      margin-bottom: 0.4rem;
+    }
+    .ra-compound-sub {
+      color: rgba(45,36,22,0.55); font-size: 0.85rem; margin-bottom: 1.5rem;
+    }
+    .ra-compound-input-row {
+      display: flex; gap: 0.7rem; flex-wrap: wrap; margin-bottom: 2rem;
+    }
+    .ra-compound-input {
+      flex: 1; min-width: 200px;
+      padding: 0.7rem 1rem; border: 1px solid rgba(45,36,22,0.15);
+      background: #FAF8F3; font-family: inherit; font-size: 0.95rem;
+      color: #2D2416; outline: none; transition: border-color 0.3s ease;
+    }
+    .ra-compound-input:focus { border-color: #C9A227; }
+    .ra-compound-input.num { max-width: 110px; flex: 0 0 110px; text-align: right; }
+    .ra-compound-bars {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      gap: 0.8rem; height: 240px; padding: 1rem 0; margin-bottom: 1rem;
+      border-bottom: 1px solid rgba(45,36,22,0.1);
+    }
+    .ra-compound-bar-col {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-end; height: 100%;
+    }
+    .ra-compound-bar {
+      width: 100%; max-width: 60px;
+      background: linear-gradient(180deg, #e8c84a 0%, #C9A227 50%, #8B6914 100%);
+      box-shadow: inset 0 -2px 0 rgba(0,0,0,0.1), 0 0 10px rgba(201,162,39,0.3);
+      transition: height 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+    .ra-compound-bar-value {
+      position: absolute; top: -1.6rem; left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Playfair Display', serif; font-size: 0.8rem;
+      color: #2D2416; font-weight: 600; white-space: nowrap;
+    }
+    .ra-compound-bar-day {
+      margin-top: 0.6rem; font-size: 0.7rem;
+      color: rgba(45,36,22,0.55); letter-spacing: 0.1em;
+    }
+    .ra-compound-summary {
+      text-align: center; padding: 1rem; background: rgba(201,162,39,0.06);
+      border: 1px dashed rgba(201,162,39,0.3); margin-top: 1rem;
+    }
+    .ra-compound-summary strong {
+      color: #C9A227; font-family: 'Playfair Display', serif;
+      font-size: 1.4rem; font-weight: 700;
+    }
+
+    /* ══ COMMITMENT CARD (Outro) ═════════════════════════════════════════════ */
+    .ra-commit {
+      margin: 4rem 0; padding: 0;
+      background: linear-gradient(135deg, #1a1208 0%, #2D2416 50%, #1a1208 100%);
+      border: 1px solid rgba(201,162,39,0.3);
+      position: relative; overflow: hidden;
+    }
+    .ra-commit::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+      opacity: 0.04;
+    }
+    .ra-commit-glyph {
+      position: absolute; right: -2rem; bottom: -3rem;
+      font-family: 'Playfair Display', serif;
+      font-size: 14rem; color: rgba(201,162,39,0.05);
+      line-height: 1; pointer-events: none;
+    }
+    .ra-commit-inner { padding: 3rem 2.5rem; position: relative; z-index: 1; }
+    .ra-commit-eyebrow {
+      color: rgba(201,162,39,0.55); font-size: 0.7rem;
+      letter-spacing: 0.5em; text-align: center; margin-bottom: 1.5rem;
+    }
+    .ra-commit-title {
+      font-family: 'Playfair Display','Noto Serif SC',serif;
+      color: #FAF8F3; font-weight: 400; text-align: center;
+      font-size: clamp(1.4rem, 2.5vw, 2rem); letter-spacing: 0.1em;
+      margin-bottom: 2rem;
+    }
+    .ra-commit-fields { display: flex; flex-direction: column; gap: 1.2rem; margin-bottom: 2rem; }
+    .ra-commit-field-label {
+      color: #C9A227; font-size: 0.7rem; letter-spacing: 0.25em;
+      margin-bottom: 0.5rem;
+    }
+    .ra-commit-input, .ra-commit-textarea {
+      width: 100%; padding: 0.9rem 1.2rem;
+      background: rgba(250,248,243,0.04);
+      border: 1px solid rgba(201,162,39,0.25); color: #FAF8F3;
+      font-family: inherit; font-size: 1rem; line-height: 1.6;
+      outline: none; transition: all 0.3s ease;
+    }
+    .ra-commit-input:focus, .ra-commit-textarea:focus {
+      border-color: #C9A227; background: rgba(250,248,243,0.06);
+    }
+    .ra-commit-input::placeholder, .ra-commit-textarea::placeholder {
+      color: rgba(250,248,243,0.3);
+    }
+    .ra-commit-textarea { resize: vertical; min-height: 70px; }
+    .ra-commit-card {
+      margin-top: 2rem; padding: 2.5rem 2rem;
+      border: 1px solid #C9A227; background: rgba(201,162,39,0.04);
+      text-align: center;
+    }
+    .ra-commit-card-q {
+      color: rgba(201,162,39,0.6); font-size: 0.7rem;
+      letter-spacing: 0.3em; margin-bottom: 1rem;
+    }
+    .ra-commit-card-line {
+      font-family: 'Playfair Display','Noto Serif SC',serif;
+      color: #FAF8F3; font-size: clamp(1.2rem, 2vw, 1.6rem);
+      line-height: 1.6; margin-bottom: 0.8rem; font-style: italic;
+    }
+    .ra-commit-card-action {
+      color: #C9A227; font-size: 1rem;
+      letter-spacing: 0.05em; margin-bottom: 2rem;
+    }
+    .ra-commit-card-dates {
+      display: flex; justify-content: space-around; gap: 1rem;
+      padding-top: 1.5rem; border-top: 1px dashed rgba(201,162,39,0.3);
+    }
+    .ra-commit-date-block {
+      flex: 1; text-align: center;
+    }
+    .ra-commit-date-label {
+      color: rgba(201,162,39,0.5); font-size: 0.65rem;
+      letter-spacing: 0.3em; margin-bottom: 0.4rem;
+    }
+    .ra-commit-date-value {
+      font-family: 'Playfair Display', serif;
+      color: #FAF8F3; font-size: 1.2rem; font-weight: 500;
+    }
+    .ra-commit-meta {
+      text-align: center; color: rgba(201,162,39,0.4);
+      font-size: 0.75rem; letter-spacing: 0.2em;
+      margin-top: 1.5rem; font-style: italic;
+    }
+    .ra-commit-save {
+      display: block; margin: 1.5rem auto 0;
+      background: #C9A227; color: #2D2416; border: none;
+      padding: 0.9rem 2.5rem; font-family: inherit;
+      font-size: 0.9rem; letter-spacing: 0.2em; cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .ra-commit-save:hover {
+      background: #e8c84a;
+      box-shadow: 0 6px 20px rgba(201,162,39,0.3);
+    }
+    .ra-commit-save:disabled {
+      opacity: 0.4; cursor: not-allowed;
+    }
+
     /* ══ READING PROGRESS BAR ════════════════════════════════════════════════ */
     .ra-progress {
       position: fixed; top: 0; left: 220px; right: 0; height: 2px;
@@ -811,6 +1130,109 @@ const GlobalStyles = () => (
   `}</style>
 );
 
+// ── Willpower Test (3-second hold, before landing) ──────────────────────────
+const WillpowerTest = ({ onPass, onSkip }) => {
+  const HOLD_MS = 3000;
+  const [progress, setProgress] = useState(0);
+  const [status, setStatus] = useState('idle');   // idle / holding / failed / passed
+  const [attempts, setAttempts] = useState(0);
+  const [exiting, setExiting] = useState(false);
+  const startRef = useRef(0);
+  const rafRef = useRef(null);
+  const passedRef = useRef(false);
+
+  const SIZE = 200, RADIUS = 92;
+  const CIRC = 2 * Math.PI * RADIUS;
+
+  const beginHold = (e) => {
+    if (e?.preventDefault) e.preventDefault();
+    if (passedRef.current) return;
+    if (status === 'failed') {
+      setStatus('idle'); setProgress(0);
+    }
+    setStatus('holding');
+    startRef.current = Date.now();
+    const tick = () => {
+      const pct = Math.min(100, ((Date.now() - startRef.current) / HOLD_MS) * 100);
+      setProgress(pct);
+      if (pct >= 100) {
+        passedRef.current = true;
+        setStatus('passed');
+        setTimeout(() => {
+          setExiting(true);
+          setTimeout(() => onPass(), 1200);
+        }, 600);
+      } else {
+        rafRef.current = requestAnimationFrame(tick);
+      }
+    };
+    rafRef.current = requestAnimationFrame(tick);
+  };
+
+  const endHold = () => {
+    if (passedRef.current || status !== 'holding') return;
+    cancelAnimationFrame(rafRef.current);
+    setStatus('failed');
+    setAttempts(a => a + 1);
+    setTimeout(() => setProgress(0), 900);
+  };
+
+  useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
+
+  let mainText = '按住光点 3 秒';
+  let subText  = '把鼠标 / 手指按住不要松开';
+  if (status === 'holding') {
+    mainText = '继续按住……';
+    subText  = `${(progress / 100 * 3).toFixed(1)} / 3.0 秒`;
+  }
+  if (status === 'failed') {
+    if (attempts === 1) {
+      mainText = '看吧 —— 你已经松手了。';
+      subText  = '连 3 秒都需要意志';
+    } else if (attempts === 2) {
+      mainText = '再试一次。';
+      subText  = '一个道理重复 21 天，是 60480 倍的难';
+    } else {
+      mainText = '没关系。重复，重复，重复。';
+      subText  = '再来';
+    }
+  }
+  if (status === 'passed') {
+    mainText = '你做到了。';
+    subText  = '现在，进入这本手册';
+  }
+
+  return (
+    <div className={`ra-will ${exiting ? 'ra-will-out' : ''}`}>
+      <p className="ra-will-eyebrow">— 在你阅读之前 —</p>
+
+      <div className={`ra-will-orb-wrap ${status}`}
+           onMouseDown={beginHold} onMouseUp={endHold} onMouseLeave={endHold}
+           onTouchStart={beginHold} onTouchEnd={endHold} onTouchCancel={endHold}>
+        <svg className="ra-will-ring" viewBox={`0 0 ${SIZE} ${SIZE}`}>
+          <circle className="bg" cx={SIZE/2} cy={SIZE/2} r={RADIUS} />
+          <circle className="fg" cx={SIZE/2} cy={SIZE/2} r={RADIUS}
+                  strokeDasharray={CIRC}
+                  strokeDashoffset={CIRC - (progress / 100) * CIRC} />
+        </svg>
+        <div className="ra-will-orb" />
+      </div>
+
+      <div className={`ra-will-prompt ${status}`}>
+        <div className="ra-will-prompt-main">{mainText}</div>
+        <div className="ra-will-prompt-sub">{subText}</div>
+      </div>
+
+      {attempts > 0 && status !== 'passed' && (
+        <div className="ra-will-attempts">第 {attempts + 1} 次</div>
+      )}
+      {status !== 'passed' && (
+        <button className="ra-will-skip" onClick={onSkip}>跳过 / SKIP →</button>
+      )}
+    </div>
+  );
+};
+
 // ── Landing Page ──────────────────────────────────────────────────────────────
 const LandingPage = ({ onEnter }) => {
   const [phase, setPhase] = useState(0);
@@ -1237,6 +1659,267 @@ const PrefacePage = ({ onNav }) => {
   );
 };
 
+// ── Stage Picker (Ch01: where am I right now?) ──────────────────────────────
+const StagePicker = ({ stages }) => {
+  const [picked, setPicked] = useState(null);
+  const KEY = 'ra-stage-picked';
+  useEffect(() => {
+    try { const v = localStorage.getItem(KEY); if (v) setPicked(parseInt(v)); } catch (e) {}
+  }, []);
+  const choose = (i) => {
+    setPicked(i);
+    try { localStorage.setItem(KEY, String(i)); } catch (e) {}
+  };
+  const feedback = [
+    { label:'信息阶段 · 现在该做的',
+      text:'你刚刚听过它。下一步只有一件事——把它写到你今天必看的地方。手机壁纸、桌面便签、笔记扉页都行。让它至少不要消失。' },
+    { label:'认同阶段 · 现在该做的',
+      text:'你"觉得对"了，但卡在了最深的缝隙——意志的缝隙。下一步：今天就用它做一个真实的小决定。一次就好。让认同长出第一个动作。' },
+    { label:'执行阶段 · 现在该做的',
+      text:'你已经做过几次。下一步不是做更多，而是做得更稳定。给自己设一个触发器："每次 X 发生，我就用这个原则。"让执行从偶然变成自动。' },
+    { label:'习惯阶段 · 现在该做的',
+      text:'你已经能默认这样做。下一步是检验：在你最累、最焦虑、最自我批判的时候，它还会出现吗？让它在压力下也成立，才会真正变成你的气质。' },
+    { label:'气质阶段 · 现在该做的',
+      text:'恭喜——别人能从你身上看见它了。但人不能停。回到第 01 步，找一个新的道理，重新开始一次螺旋。一个气质好的人，永远在重复一些更深的东西。' },
+  ];
+  return (
+    <div className="ra-stage-pick">
+      <div className="ra-stage-pick-q">那么——你现在在哪一阶段？</div>
+      <p className="ra-stage-pick-hint">挑一个，看一下你的下一步是什么</p>
+      <div className="ra-stage-buttons">
+        {stages.map((s, i) => (
+          <button key={i}
+                  className={`ra-stage-btn ${picked === i ? 'selected' : ''}`}
+                  onClick={() => choose(i)}>
+            <span className="ra-stage-btn-num">{s.n}</span>
+            <span className="ra-stage-btn-label">{s.label}</span>
+          </button>
+        ))}
+      </div>
+      {picked !== null && (
+        <div className="ra-stage-feedback" key={picked}>
+          <div className="ra-stage-feedback-label">{feedback[picked].label}</div>
+          <p className="ra-stage-feedback-text">{feedback[picked].text}</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Compound Visualizer (Ch02: see compounding with your own habit) ─────────
+const CompoundVisualizer = () => {
+  const KEY = 'ra-compound';
+  const [thing, setThing] = useState('');
+  const [amount, setAmount] = useState(100);
+  const [unit, setUnit] = useState('字');
+  const [animated, setAnimated] = useState(false);
+  const days = [1, 7, 21, 100, 365];
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        setThing(d.thing || '');
+        setAmount(d.amount || 100);
+        setUnit(d.unit || '字');
+        setAnimated(true);
+      }
+    } catch (e) {}
+  }, []);
+
+  const persist = (next = {}) => {
+    try {
+      localStorage.setItem(KEY, JSON.stringify({ thing, amount, unit, ...next }));
+    } catch (e) {}
+  };
+
+  const handleVisualize = () => {
+    setAnimated(false);
+    setTimeout(() => setAnimated(true), 30);
+    persist();
+  };
+
+  // bar heights (log-scaled so 365 isn't off the chart)
+  const totals = days.map(d => d * (Number(amount) || 0));
+  const maxTotal = Math.max(...totals, 1);
+  const heights = totals.map(t => Math.max(8, (Math.log(t + 1) / Math.log(maxTotal + 1)) * 100));
+
+  const fmt = (n) => n >= 1000 ? n.toLocaleString('zh-CN') : String(n);
+
+  return (
+    <div className="ra-compound">
+      <div className="ra-compound-title">复利可视化器</div>
+      <p className="ra-compound-sub">
+        输入你今天准备做的一件小事，看看它在 1 / 7 / 21 / 100 / 365 天后会变成什么。
+      </p>
+
+      <div className="ra-compound-input-row">
+        <input className="ra-compound-input" type="text" placeholder="例：每天写"
+               value={thing} onChange={e => setThing(e.target.value)} />
+        <input className="ra-compound-input num" type="number" min="1"
+               value={amount} onChange={e => setAmount(e.target.value)} />
+        <input className="ra-compound-input num" type="text" placeholder="单位"
+               value={unit} onChange={e => setUnit(e.target.value)}
+               style={{ maxWidth: 80, flex: '0 0 80px' }} />
+        <button className="ra-action-save" onClick={handleVisualize}
+                style={{ background: '#C9A227', color: '#2D2416' }}>
+          看 →
+        </button>
+      </div>
+
+      <div className="ra-compound-bars">
+        {days.map((d, i) => (
+          <div key={d} className="ra-compound-bar-col">
+            <div className="ra-compound-bar"
+                 style={{
+                   height: animated ? `${heights[i]}%` : '0%',
+                   transitionDelay: `${i * 200}ms`,
+                 }}>
+              {animated && (
+                <span className="ra-compound-bar-value">
+                  {fmt(totals[i])} {unit}
+                </span>
+              )}
+            </div>
+            <div className="ra-compound-bar-day">{d} 天</div>
+          </div>
+        ))}
+      </div>
+
+      {animated && thing && (
+        <div className="ra-compound-summary">
+          一年之后：你「{thing}」积累的总量是
+          <strong> {fmt(totals[4])} {unit}</strong>
+          <br />
+          <span style={{ color: 'rgba(45,36,22,0.55)', fontSize: '0.8rem' }}>
+            前提：不要反复清零
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Commitment Card (Outro: 21-day pledge) ──────────────────────────────────
+const CommitmentCard = () => {
+  const KEY = 'ra-commit';
+  const [principle, setPrinciple] = useState('');
+  const [action, setAction] = useState('');
+  const [savedAt, setSavedAt] = useState(null);
+  const [revealAt, setRevealAt] = useState(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        setPrinciple(d.principle || '');
+        setAction(d.action || '');
+        setSavedAt(d.savedAt || null);
+        setRevealAt(d.revealAt || null);
+      }
+    } catch (e) {}
+  }, []);
+
+  // Pre-fill principle from Ch01 action card (if user picked one)
+  useEffect(() => {
+    if (principle) return;
+    try {
+      const raw = localStorage.getItem('ra-action-ch01');
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d.picked && d.picked.length > 0) setPrinciple(d.picked[0]);
+        else if (d.custom) setPrinciple(d.custom.split('\n')[0].slice(0, 30));
+      }
+    } catch (e) {}
+  }, []);
+
+  const save = () => {
+    if (!principle.trim() || !action.trim()) return;
+    const now = new Date();
+    const target = new Date(now.getTime() + 21 * 24 * 3600 * 1000);
+    const fmt = (d) => `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+    const ts = fmt(now);
+    const reveal = fmt(target);
+    try {
+      localStorage.setItem(KEY, JSON.stringify({
+        principle, action, savedAt: ts, revealAt: reveal
+      }));
+      setSavedAt(ts); setRevealAt(reveal);
+    } catch (e) {}
+  };
+
+  const today = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  })();
+  const target21 = (() => {
+    const d = new Date(Date.now() + 21 * 24 * 3600 * 1000);
+    return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  })();
+
+  const ready = principle.trim() && action.trim();
+
+  return (
+    <div className="ra-commit">
+      <span className="ra-commit-glyph">诺</span>
+      <div className="ra-commit-inner">
+        <p className="ra-commit-eyebrow">21-DAY COMMITMENT</p>
+        <h3 className="ra-commit-title">写一份给自己的承诺</h3>
+
+        <div className="ra-commit-fields">
+          <div>
+            <div className="ra-commit-field-label">那句道理</div>
+            <input className="ra-commit-input" type="text"
+                   placeholder="例：不要反复归零"
+                   value={principle}
+                   onChange={e => setPrinciple(e.target.value)} />
+          </div>
+          <div>
+            <div className="ra-commit-field-label">未来 21 天，我承诺这样做</div>
+            <textarea className="ra-commit-textarea"
+                      placeholder="例：每天睡前问自己一遍：今天有什么留下了？"
+                      value={action}
+                      onChange={e => setAction(e.target.value)} />
+          </div>
+        </div>
+
+        {/* Live preview card */}
+        <div className="ra-commit-card">
+          <div className="ra-commit-card-q">我的承诺</div>
+          <div className="ra-commit-card-line">
+            「{principle || '——你的那句道理——'}」
+          </div>
+          <div className="ra-commit-card-action">
+            {action || '——你给自己的承诺——'}
+          </div>
+          <div className="ra-commit-card-dates">
+            <div className="ra-commit-date-block">
+              <div className="ra-commit-date-label">承诺于</div>
+              <div className="ra-commit-date-value">{savedAt || today}</div>
+            </div>
+            <div className="ra-commit-date-block">
+              <div className="ra-commit-date-label">21 天后回来</div>
+              <div className="ra-commit-date-value">{revealAt || target21}</div>
+            </div>
+          </div>
+        </div>
+
+        <button className="ra-commit-save" onClick={save} disabled={!ready}>
+          {savedAt ? '✓ 已封印 · 重新承诺' : '封 印 这 份 承 诺'}
+        </button>
+
+        <p className="ra-commit-meta">
+          {savedAt
+            ? `已保存到本地浏览器 · ${revealAt} 那天回来看看你做到了什么`
+            : '保存后 21 天后回来 · 也是给"重复"的一次实战'}
+        </p>
+      </div>
+    </div>
+  );
+};
+
 // ── Chapter Entrance Overlay (full-screen ceremony) ─────────────────────────
 const ChapterEntrance = ({ pageId, navKey }) => {
   // Only show for actual chapters
@@ -1624,6 +2307,8 @@ const Ch01Page = ({ onNav }) => {
           ))}
         </div>
 
+        <StagePicker stages={stages} />
+
         {/* Key insight */}
         <div style={{ marginTop: '3rem', padding: '2rem', background: '#2D2416', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', right: '1.5rem', top: '0.5rem', fontSize: '5rem',
@@ -1788,6 +2473,8 @@ const Ch02Page = ({ onNav }) => {
             </p>
           </div>
         </div>
+
+        <CompoundVisualizer />
 
         <div className="ra-bigquote">
           <p className="ra-bigquote-text">
@@ -2324,6 +3011,8 @@ const OutroPage = ({ onNav }) => {
           )}
         </div>
 
+        <CommitmentCard />
+
         {/* Restart button — 重复 themed */}
         <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
           <button onClick={() => onNav('directory')}
@@ -2361,6 +3050,7 @@ const OutroPage = ({ onNav }) => {
 // ── App (root) ────────────────────────────────────────────────────────────────
 export default function App() {
   const [entered, setEntered] = useState(false);
+  const [willPassed, setWillPassed] = useState(false);
   const [activePage, setActivePage] = useState('preface');
   const [scrollPct, setScrollPct] = useState(0);
   const [navKey, setNavKey] = useState(0);   // increments on each nav, triggers entrance animation
@@ -2442,7 +3132,12 @@ export default function App() {
       {/* GlobalStyles is always mounted — CSS never disappears */}
       <GlobalStyles />
 
-      {!entered ? (
+      {!willPassed ? (
+        <WillpowerTest
+          onPass={() => setWillPassed(true)}
+          onSkip={() => setWillPassed(true)}
+        />
+      ) : !entered ? (
         <LandingPage onEnter={() => setEntered(true)} />
       ) : (
         <div className="ra-app">
