@@ -17,30 +17,40 @@ const GlobalStyles = () => (
     html, body, #root { height: 100%; overflow: hidden; }
     body { font-family: 'Noto Serif SC', serif; }
 
-    /* ══ WILLPOWER TEST (3-second hold) ══════════════════════════════════════ */
+    /* ══ WILLPOWER TEST (3-second hold) — embedded card ══════════════════════ */
     .ra-will {
-      position: fixed; inset: 0; background: #050302; color: #FAF8F3;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      z-index: 600; user-select: none; -webkit-user-select: none;
-      overflow: hidden;
+      margin: 3rem 0; padding: 3rem 2rem;
+      background: linear-gradient(135deg, #14100a 0%, #1a1208 50%, #0B0805 100%);
+      color: #FAF8F3;
+      position: relative; overflow: hidden;
+      display: flex; flex-direction: column; align-items: center;
+      user-select: none; -webkit-user-select: none;
+      border: 1px solid rgba(201,162,39,0.15);
     }
     .ra-will::before {
       content: ''; position: absolute; inset: 0; pointer-events: none;
       background: radial-gradient(ellipse at center, rgba(201,162,39,0.08) 0%, transparent 60%);
     }
-    .ra-will-out {
-      animation: ra-will-out 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    .ra-will::after {
+      content: '体验 / TRY IT'; position: absolute; top: -10px; left: 2rem;
+      background: #1a1208; padding: 0 0.8rem; color: #C9A227;
+      font-size: 0.7rem; letter-spacing: 0.3em;
     }
-    @keyframes ra-will-out {
-      to { opacity: 0; filter: blur(8px); pointer-events: none; }
+    .ra-will-intro {
+      max-width: 480px; text-align: center; margin-bottom: 2.5rem;
+      position: relative; z-index: 1;
     }
-    .ra-will-eyebrow {
-      color: rgba(201,162,39,0.45); font-size: 0.7rem;
-      letter-spacing: 0.55em; margin-bottom: 5rem;
-      text-align: center;
+    .ra-will-intro-title {
+      font-family: 'Playfair Display','Noto Serif SC',serif;
+      color: #FAF8F3; font-size: clamp(1.2rem, 2vw, 1.5rem);
+      margin-bottom: 0.8rem; letter-spacing: 0.05em;
+    }
+    .ra-will-intro-sub {
+      color: rgba(250,248,243,0.6); font-size: 0.9rem;
+      line-height: 1.8;
     }
     .ra-will-orb-wrap {
-      position: relative; width: 200px; height: 200px;
+      position: relative; width: 160px; height: 160px;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer;
     }
@@ -81,39 +91,37 @@ const GlobalStyles = () => (
         0 0 140px rgba(201,162,39,0.3);
     }
     .ra-will-orb-wrap.passed .ra-will-orb {
-      transform: scale(8); animation: none;
+      transform: scale(6); animation: none;
       box-shadow: 0 0 200px rgba(201,162,39,0.8);
     }
     .ra-will-prompt {
-      margin-top: 5rem; min-height: 4.5rem; text-align: center;
-      transition: opacity 0.4s ease, transform 0.4s ease;
+      margin-top: 2.5rem; min-height: 4rem; text-align: center;
+      position: relative; z-index: 1;
     }
     .ra-will-prompt-main {
       font-family: 'Playfair Display','Noto Serif SC',serif;
-      color: rgba(250,248,243,0.9); font-size: clamp(1.2rem, 2.2vw, 1.6rem);
-      letter-spacing: 0.15em; margin-bottom: 0.6rem;
+      color: rgba(250,248,243,0.92); font-size: clamp(1.05rem, 1.8vw, 1.3rem);
+      letter-spacing: 0.1em; margin-bottom: 0.5rem;
     }
     .ra-will-prompt-sub {
-      color: rgba(201,162,39,0.6); font-size: 0.8rem;
-      letter-spacing: 0.25em;
+      color: rgba(201,162,39,0.6); font-size: 0.78rem;
+      letter-spacing: 0.2em;
     }
     .ra-will-prompt.failed .ra-will-prompt-main {
       color: #C9A227; font-style: italic;
     }
-    .ra-will-skip {
-      position: absolute; bottom: 2rem; right: 2rem;
-      color: rgba(201,162,39,0.3); font-size: 0.7rem;
-      letter-spacing: 0.2em; cursor: pointer;
-      transition: color 0.3s ease;
-      background: transparent; border: none;
-      font-family: inherit;
-    }
-    .ra-will-skip:hover { color: #C9A227; }
     .ra-will-attempts {
-      position: absolute; bottom: 2rem; left: 2rem;
-      color: rgba(201,162,39,0.3); font-size: 0.7rem;
-      letter-spacing: 0.2em;
+      margin-top: 1rem; color: rgba(201,162,39,0.4);
+      font-size: 0.7rem; letter-spacing: 0.2em;
     }
+    .ra-will-coda {
+      margin-top: 2.5rem; padding-top: 2rem; max-width: 540px;
+      border-top: 1px solid rgba(201,162,39,0.15);
+      color: rgba(250,248,243,0.7); font-size: 0.92rem;
+      line-height: 1.9; text-align: center;
+      position: relative; z-index: 1;
+    }
+    .ra-will-coda strong { color: #C9A227; font-weight: 500; }
 
     /* ══ STAGE SELF-PICK (Ch01) ═══════════════════════════════════════════════ */
     .ra-stage-pick {
@@ -1130,26 +1138,23 @@ const GlobalStyles = () => (
   `}</style>
 );
 
-// ── Willpower Test (3-second hold, before landing) ──────────────────────────
-const WillpowerTest = ({ onPass, onSkip }) => {
+// ── Willpower Test (3-second hold, embedded as Ch01 demo) ───────────────────
+const WillpowerTest = () => {
   const HOLD_MS = 3000;
   const [progress, setProgress] = useState(0);
-  const [status, setStatus] = useState('idle');   // idle / holding / failed / passed
+  const [status, setStatus] = useState('idle');
   const [attempts, setAttempts] = useState(0);
-  const [exiting, setExiting] = useState(false);
   const startRef = useRef(0);
   const rafRef = useRef(null);
   const passedRef = useRef(false);
 
-  const SIZE = 200, RADIUS = 92;
+  const SIZE = 160, RADIUS = 72;
   const CIRC = 2 * Math.PI * RADIUS;
 
   const beginHold = (e) => {
     if (e?.preventDefault) e.preventDefault();
     if (passedRef.current) return;
-    if (status === 'failed') {
-      setStatus('idle'); setProgress(0);
-    }
+    if (status === 'failed') { setStatus('idle'); setProgress(0); }
     setStatus('holding');
     startRef.current = Date.now();
     const tick = () => {
@@ -1158,10 +1163,6 @@ const WillpowerTest = ({ onPass, onSkip }) => {
       if (pct >= 100) {
         passedRef.current = true;
         setStatus('passed');
-        setTimeout(() => {
-          setExiting(true);
-          setTimeout(() => onPass(), 1200);
-        }, 600);
       } else {
         rafRef.current = requestAnimationFrame(tick);
       }
@@ -1180,31 +1181,37 @@ const WillpowerTest = ({ onPass, onSkip }) => {
   useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
 
   let mainText = '按住光点 3 秒';
-  let subText  = '把鼠标 / 手指按住不要松开';
+  let subText  = '鼠标 / 手指按住不要松开';
   if (status === 'holding') {
     mainText = '继续按住……';
     subText  = `${(progress / 100 * 3).toFixed(1)} / 3.0 秒`;
   }
   if (status === 'failed') {
     if (attempts === 1) {
-      mainText = '看吧 —— 你已经松手了。';
+      mainText = '看吧 —— 你已经松手了';
       subText  = '连 3 秒都需要意志';
     } else if (attempts === 2) {
-      mainText = '再试一次。';
+      mainText = '再试一次';
       subText  = '一个道理重复 21 天，是 60480 倍的难';
     } else {
-      mainText = '没关系。重复，重复，重复。';
-      subText  = '再来';
+      mainText = '没关系。重复，重复，重复';
+      subText  = '再来一次';
     }
   }
   if (status === 'passed') {
-    mainText = '你做到了。';
-    subText  = '现在，进入这本手册';
+    mainText = '你做到了';
+    subText  = '——3 秒而已。但你刚才确实用上了意志';
   }
 
   return (
-    <div className={`ra-will ${exiting ? 'ra-will-out' : ''}`}>
-      <p className="ra-will-eyebrow">— 在你阅读之前 —</p>
+    <div className="ra-will">
+      <div className="ra-will-intro">
+        <div className="ra-will-intro-title">那么先做一件事——</div>
+        <div className="ra-will-intro-sub">
+          按住下面这个金色光点 <strong style={{color:'#C9A227'}}>3 秒</strong>，
+          中途不要松开。
+        </div>
+      </div>
 
       <div className={`ra-will-orb-wrap ${status}`}
            onMouseDown={beginHold} onMouseUp={endHold} onMouseLeave={endHold}
@@ -1221,13 +1228,24 @@ const WillpowerTest = ({ onPass, onSkip }) => {
       <div className={`ra-will-prompt ${status}`}>
         <div className="ra-will-prompt-main">{mainText}</div>
         <div className="ra-will-prompt-sub">{subText}</div>
+        {attempts > 0 && status !== 'passed' && (
+          <div className="ra-will-attempts">第 {attempts + 1} 次</div>
+        )}
       </div>
 
-      {attempts > 0 && status !== 'passed' && (
-        <div className="ra-will-attempts">第 {attempts + 1} 次</div>
-      )}
-      {status !== 'passed' && (
-        <button className="ra-will-skip" onClick={onSkip}>跳过 / SKIP →</button>
+      {(status === 'passed' || attempts >= 2) && (
+        <div className="ra-will-coda">
+          {status === 'passed' ? (
+            <>3 秒，你按住了。<br/>
+            但试着想象一下：把"早睡"按住 <strong>21 天</strong>。把"少刷手机"按住 <strong>100 天</strong>。<br/>
+            <strong>知道</strong>和<strong>做到</strong>之间，差的就是这种意志的延续。</>
+          ) : (
+            <>这就是<strong>意志的缝隙</strong>。<br/>
+            知道要按住，知道只有 3 秒，知道松手就失败——
+            但身体还是松开了。<br/>
+            生活里的"知道却没做到"，每一次都是同样的机制。</>
+          )}
+        </div>
       )}
     </div>
   );
@@ -2307,6 +2325,22 @@ const Ch01Page = ({ onNav }) => {
           ))}
         </div>
 
+        {/* The Gap — interactive demo of "意志的缝隙" */}
+        <div style={{ marginTop: '4rem' }}>
+          <h3 style={{ fontSize: '1.1rem', color: '#2D2416', letterSpacing: '0.1em',
+                        fontWeight: 500, marginBottom: '0.5rem', scrollMarginTop: '40px' }}
+              id="ch01-gap">
+            知道和做到之间，是意志的缝隙
+          </h3>
+          <p style={{ color: 'rgba(45,36,22,0.55)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
+            大多数人卡在 <span style={{color:'#C9A227'}}>02 → 03</span> 这一步——从"认同"到"执行"。<br/>
+            道理已经听过、已经认同、甚至感动到流泪——但生活里就是没做。<br/>
+            这不是知识问题，是意志问题。
+          </p>
+
+          <WillpowerTest />
+        </div>
+
         <StagePicker stages={stages} />
 
         {/* Key insight */}
@@ -3050,7 +3084,6 @@ const OutroPage = ({ onNav }) => {
 // ── App (root) ────────────────────────────────────────────────────────────────
 export default function App() {
   const [entered, setEntered] = useState(false);
-  const [willPassed, setWillPassed] = useState(false);
   const [activePage, setActivePage] = useState('preface');
   const [scrollPct, setScrollPct] = useState(0);
   const [navKey, setNavKey] = useState(0);   // increments on each nav, triggers entrance animation
@@ -3066,6 +3099,7 @@ export default function App() {
   const anchorsByPage = {
     ch01: [
       { id: 'ch01-stages',     label: '五个阶段' },
+      { id: 'ch01-gap',        label: '意志的缝隙' },
       { id: 'ch01-experience', label: '常见体验' },
     ],
     ch02: [
@@ -3132,12 +3166,7 @@ export default function App() {
       {/* GlobalStyles is always mounted — CSS never disappears */}
       <GlobalStyles />
 
-      {!willPassed ? (
-        <WillpowerTest
-          onPass={() => setWillPassed(true)}
-          onSkip={() => setWillPassed(true)}
-        />
-      ) : !entered ? (
+      {!entered ? (
         <LandingPage onEnter={() => setEntered(true)} />
       ) : (
         <div className="ra-app">
